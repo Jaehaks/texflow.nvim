@@ -23,7 +23,7 @@ local function replace_cmd_token(command)
 end
 
 -- compile file
-function M.compile_and_view(config)
+M.compile = function(config)
 	-- get config
 	if not config then
 		config = require('texflow.config').get()
