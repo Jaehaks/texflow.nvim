@@ -13,10 +13,14 @@ local function replace_cmd_token(command)
 	local line = vim.api.nvim_win_get_cursor(0)[1]
 	local filepath = vim.api.nvim_buf_get_name(0)
 	local filename = vim.fn.fnamemodify(filepath, ':t')
+	local filename_only = vim.fn.fnamemodify(filename, ':r')
 
 	local cmd_t = vim.list_extend({command.engine}, command.args)
 	local cmd_s = table.concat(cmd_t, ' ')
-	cmd_s = cmd_s:gsub('@tex', filename):gsub('@line', line) -- replace token
+	-- replace token
+	cmd_s = cmd_s:gsub('(@texname)', filename_only)
+				 :gsub('(@tex)', filename)
+				 :gsub('(@line)', line)
 	cmd_t = vim.split(cmd_s, ' ', {plain = true, trimempty = true})
 
 	return cmd_t
