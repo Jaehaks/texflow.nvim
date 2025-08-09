@@ -39,13 +39,49 @@ M.compile = function(config)
 		return
 	end
 
-	-- compile
+	-- get command with @token is replaced
+	local cmd = replace_cmd_token(config.latex)
+
+	-- show progress message
+	local ok, fidget = pcall(require, 'fidget')
+	ok = not ok
+	local progress
+	if ok then
+		progress = fidget.progress.handle.create({
+			title = 'compiling with ' .. config.latex.engine .. '...',
+			message = vim.fn.expand('%'),
+			lsp_client = { name = 'texflow.nvim' }
+		})
+	else
+		vim.print('"' .. vim.fn.expand('%') .. '" compiling with ' .. config.latex.engine .. '...')
+	end
+
+	-- compile start
 	local cmd = replace_cmd_token(config.latex) -- replace @ token from latex command
 	vim.print(cmd)
 	vim.fn.jobstart(cmd, {
 		stdout_buffered = true, -- output will be transferred at once when job complete
 		on_exit = function(jid, code)
-			vim.print(cmd)
+			if code == 0 then
+				if ok then
+					progress:report({
+						message = 'compile completed!',
+						done = true,
+					})
+					progress:finish()
+				else
+					vim.notify('compile completed!', vim.log.levels.INFO)
+				end
+			else
+				if ok then
+					fidget.notify('compile failed! (' .. code .. ')', vim.log.levels.ERROR, {
+						ttl = 5, -- [s]
+						skip_history = false,
+					})
+				else
+					vim.notify('compile failed! (' .. code .. ')', vim.log.levels.ERROR)
+				end
+			end
 			-- if code == 0 then
 			-- 	local pdf_file = file:gsub("%.tex$", ".pdf")
 			-- 	local viewer_args = vim.list_extend({config.viewer}, config.viewer_args)
