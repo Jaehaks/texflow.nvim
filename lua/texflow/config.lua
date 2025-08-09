@@ -8,7 +8,6 @@ local default_config = {
 			'-pdf',
 			'-interaction=nonstopmode',
 			'-synctex=1',
-			'-output=output',
 			'-verbose',
 			'-file-line-error',
 			'%f',
