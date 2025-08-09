@@ -44,7 +44,6 @@ M.compile = function(config)
 
 	-- show progress message
 	local ok, fidget = pcall(require, 'fidget')
-	ok = not ok
 	local progress
 	if ok then
 		progress = fidget.progress.handle.create({
@@ -58,7 +57,6 @@ M.compile = function(config)
 
 	-- compile start
 	local cmd = replace_cmd_token(config.latex) -- replace @ token from latex command
-	vim.print(cmd)
 	vim.fn.jobstart(cmd, {
 		stdout_buffered = true, -- output will be transferred at once when job complete
 		on_exit = function(jid, code)
