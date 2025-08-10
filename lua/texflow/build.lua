@@ -17,6 +17,7 @@ M.compile = function(config)
 	end
 
 	-- get data of file
+	local curdir = vim.fn.getcwd(0)
 	local file = Utils.get_filedata(0)
 
 	-- check current file is valid tex
@@ -34,6 +35,10 @@ M.compile = function(config)
 		vim.notify('TexFlow : ' .. config.latex.engine .. 'is not installed', vim.log.levels.ERROR)
 		return
 	end
+
+	-- move workspace to location of file to compile
+	vim.cmd('lcd ' .. file.filepath)
+	vim.cmd('cd')
 
 	-- get command with @token is replaced
 	local cmd = Utils.replace_cmd_token(config.latex)
@@ -78,6 +83,8 @@ M.compile = function(config)
 			end
 
 			job_id.compile = nil
+			-- restore workspace
+			vim.cmd('lcd ' .. curdir)
 		end
 	})
 end
