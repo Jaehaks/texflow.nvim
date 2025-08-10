@@ -38,7 +38,6 @@ M.compile = function(config)
 
 	-- move workspace to location of file to compile
 	vim.cmd('lcd ' .. file.filepath)
-	vim.cmd('cd')
 
 	-- get command with @token is replaced
 	local cmd = Utils.replace_cmd_token(config.latex)
