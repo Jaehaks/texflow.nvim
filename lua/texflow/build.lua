@@ -1,6 +1,10 @@
 local M = {}
 
 -- local uv = vim.uv or vim.loop
+local job_id = { -- check job is running
+	compile = nil,
+	viewer = nil,
+}
 
 -- check command is executable
 local function has_command(cmd)
@@ -28,6 +32,12 @@ end
 
 -- compile file
 M.compile = function(config)
+	-- check job is running
+	if job_id.compile then
+		vim.notify('TexFlow : compile is running! Please wait to completion', vim.log.levels.WARN)
+		return
+	end
+
 	-- get config
 	if not config then
 		config = require('texflow.config').get()
@@ -57,7 +67,7 @@ M.compile = function(config)
 
 	-- compile start
 	local cmd = replace_cmd_token(config.latex) -- replace @ token from latex command
-	vim.fn.jobstart(cmd, {
+	job_id.compile = vim.fn.jobstart(cmd, {
 		stdout_buffered = true, -- output will be transferred at once when job complete
 		on_exit = function(jid, code)
 			if code == 0 then
@@ -89,6 +99,7 @@ M.compile = function(config)
 			-- else
 			-- 	vim.notify("컴파일 실패", vim.log.levels.ERROR)
 			-- end
+			job_id.compile = nil
 		end
 	})
 end
