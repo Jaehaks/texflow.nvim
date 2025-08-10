@@ -73,7 +73,7 @@ M.compile = function(config)
 			if code == 0 then
 				if ok then
 					progress:report({
-						message = 'compile completed!',
+						title = 'compile completed!',
 						done = true,
 					})
 					progress:finish()
