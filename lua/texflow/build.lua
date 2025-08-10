@@ -66,7 +66,6 @@ M.compile = function(config)
 	end
 
 	-- compile start
-	local cmd = replace_cmd_token(config.latex) -- replace @ token from latex command
 	job_id.compile = vim.fn.jobstart(cmd, {
 		stdout_buffered = true, -- output will be transferred at once when job complete
 		on_exit = function(jid, code)
