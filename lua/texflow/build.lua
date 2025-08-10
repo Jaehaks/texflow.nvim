@@ -90,15 +90,7 @@ M.compile = function(config)
 					vim.notify('compile failed! (' .. code .. ')', vim.log.levels.ERROR)
 				end
 			end
-			-- if code == 0 then
-			-- 	local pdf_file = file:gsub("%.tex$", ".pdf")
-			-- 	local viewer_args = vim.list_extend({config.viewer}, config.viewer_args)
-			-- 	table.insert(viewer_args, pdf_file)
-			-- 	vim.fn.jobstart(viewer_args, {detach = true})
-			-- 	vim.notify("컴파일 및 뷰어 실행 완료")
-			-- else
-			-- 	vim.notify("컴파일 실패", vim.log.levels.ERROR)
-			-- end
+
 			job_id.compile = nil
 		end
 	})
