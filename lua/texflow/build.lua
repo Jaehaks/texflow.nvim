@@ -82,10 +82,11 @@ M.compile = function(config)
 				end
 			else
 				if ok then
-					fidget.notify('compile failed! (' .. code .. ')', vim.log.levels.ERROR, {
-						ttl = 5, -- [s]
-						skip_history = false,
+					progress:report({
+						title = 'compile ERROR(' .. code .. ')',
+						done = true,
 					})
+					progress:finish()
 				else
 					vim.notify('compile failed! (' .. code .. ')', vim.log.levels.ERROR)
 				end
