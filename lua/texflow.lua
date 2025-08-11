@@ -1,15 +1,21 @@
-local config = require("texflow.config")
-
 local M = {}
 
 M.setup = function(opts)
-	config.set(opts)
+	require("texflow.config").set(opts)
 end
 
-M.get_config = config.get
+-- // Proxy pattern
 
-M.compile = function (opts)
-	require('texflow.build').compile(opts)
-end
+-- require('texflow').config.<function>
+M.config = setmetatable({}, {
+	__index = function(_, k)
+		return require('texflow.config')[k]
+	end
+})
 
-return M
+-- require('texflow').<function>
+return setmetatable(M, {
+	__index = function(_, k)
+		return require('texflow.build')[k]
+	end
+})
