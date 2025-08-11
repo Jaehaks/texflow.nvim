@@ -41,4 +41,14 @@ M.get_filedata = function(bufnr)
 	}
 end
 
+
+-- check valid filetype
+M.is_tex = function (file)
+	local ft_allow = {'tex', 'plaintex', 'latex'}
+	if not vim.tbl_contains(ft_allow, file.extension) then
+		return false
+	end
+	return true
+end
+
 return M

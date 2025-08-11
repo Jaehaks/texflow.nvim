@@ -21,8 +21,7 @@ M.compile = function(config)
 	local file = Utils.get_filedata(0)
 
 	-- check current file is valid tex
-	local ft_allow = {'tex', 'plaintex', 'latex'}
-	if not vim.tbl_contains(ft_allow, file.extension) then
+	if not Utils.is_tex(file) then
 		vim.notify('TexFlow : Execute command on *.tex file only', vim.log.levels.ERROR)
 		return
 	end
