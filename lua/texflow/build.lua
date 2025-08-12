@@ -66,6 +66,11 @@ M.compile = function(opts, ext)
 				else
 					vim.notify('compile completed!', vim.log.levels.INFO)
 				end
+
+				-- open viewer after compile
+				if ext and ext.openAfter then
+					M.view()
+				end
 			else
 				if ok then
 					progress:report({
