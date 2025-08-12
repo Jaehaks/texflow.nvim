@@ -17,8 +17,8 @@ M.compile = function(opts, ext)
 	end
 
 	-- get data of file
-	local curdir = vim.fn.getcwd(0)
-	local file = Utils.get_filedata(0)
+	local curdir = vim.fn.getcwd()
+	local file = Utils.get_filedata()
 
 	-- check current file is valid tex
 	if not Utils.is_tex(file) then

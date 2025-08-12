@@ -22,14 +22,14 @@ end
 
 -- get file data
 M.get_filedata = function(bufnr)
-	local buffer = bufnr or 0
+	bufnr = bufnr or vim.api.nvim_get_current_buf()
 
-	local line          = vim.api.nvim_win_get_cursor(buffer)[1]
-	local fullpath      = vim.api.nvim_buf_get_name(buffer)
+	local line          = vim.api.nvim_win_get_cursor(0)[1] -- get cursor of current window
+	local fullpath      = vim.api.nvim_buf_get_name(bufnr)
 	local filepath      = vim.fn.fnamemodify(fullpath, ':h')
 	local filename      = vim.fn.fnamemodify(fullpath, ':t')
-	local filename_only = vim.fn.fnamemodify(fullpath, ':r')
-	local extension     = vim.fn.fnamemodify(fullpath, ':e')
+	local filename_only = vim.fn.fnamemodify(filename, ':r')
+	local extension     = vim.fn.fnamemodify(filename, ':e')
 
 	return {
 		line          = line,
@@ -38,6 +38,7 @@ M.get_filedata = function(bufnr)
 		filename      = filename,
 		filename_only = filename_only,
 		extension     = extension,
+		bufnr         = bufnr,
 	}
 end
 
