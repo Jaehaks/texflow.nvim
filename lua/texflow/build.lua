@@ -35,9 +35,6 @@ M.compile = function(opts, ext)
 		return
 	end
 
-	-- move workspace to location of file to compile
-	vim.cmd('lcd ' .. file.filepath)
-
 	-- get command with @token is replaced
 	local cmd = Utils.replace_cmd_token(opts.latex)
 
@@ -56,6 +53,7 @@ M.compile = function(opts, ext)
 
 	-- compile start
 	job_id.compile = vim.fn.jobstart(cmd, {
+		cwd = file.filepath,
 		stdout_buffered = true, -- output will be transferred at once when job complete
 		on_exit = function(_, code, _)
 			if code == 0 then
@@ -80,9 +78,7 @@ M.compile = function(opts, ext)
 				end
 			end
 
-			-- restore workspace
 			job_id.compile = nil
-			vim.cmd('lcd ' .. curdir)
 		end
 	})
 end
