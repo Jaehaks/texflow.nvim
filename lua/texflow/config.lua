@@ -3,6 +3,8 @@ local M = {}
 -- default configuration
 local default_config = {
 	latex = {
+		shell = vim.api.nvim_get_option_value('shell', {scope = 'global'}),
+		shellcmdflag = vim.api.nvim_get_option_value('shellcmdflag', {scope = 'global'}),
 		engine = 'latexmk',
 		args = {
 			'-pdf',
@@ -10,17 +12,21 @@ local default_config = {
 			'-synctex=1',
 			'-verbose',
 			'-file-line-error',
-			'%f',
+			'@tex',
 		},
 	},
 	viewer = {
+		shell = vim.api.nvim_get_option_value('shell', {scope = 'global'}),
+		shellcmdflag = vim.api.nvim_get_option_value('shellcmdflag', {scope = 'global'}),
 		engine = 'sioyek',
 		args = {
 			'--reuse-window',
 			'--nofocus',
 			'--forward-search-file @tex',
 			'--forward-search-line @line',
-		}
+			'@pdf',
+		},
+		focus = true,
 	}
 }
 

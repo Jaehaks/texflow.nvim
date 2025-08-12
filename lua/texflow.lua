@@ -2,6 +2,7 @@ local M = {}
 
 M.setup = function(opts)
 	require("texflow.config").set(opts)
+	vim.api.nvim_create_augroup('TexFlow', {clear = true})
 end
 
 -- // Proxy pattern

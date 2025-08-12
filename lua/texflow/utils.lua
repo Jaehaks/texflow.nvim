@@ -1,20 +1,53 @@
 local M = {}
+local uv = vim.uv
+local has_win32 = vim.fn.has('win32')
 
 -- check command is executable
 M.has_command = function(cmd)
 	return vim.fn.executable(cmd) == 1
 end
 
+-- change separator on directory depends on OS
+---@param path string relative path
+local function sep_change(path)
+	if has_win32 then
+		return path:gsub('/', '\\')
+	else
+		return path:gsub('\\', '/')
+	end
+end
+
+-- find files from dir
+---@param dir string directory path without '/' at tail.  '.' means current path
+---@param file string filename which you want to find <filename.ext> format
+local function get_filepath(dir, file)
+	-- find files without suffix option / and return all matched files with list
+	-- the depth will limited by 2
+	-- local pattern = sep_change(dir .. '/*/*/' .. file)
+	local pattern = sep_change(dir .. '/**/' .. file)
+	local files = vim.fn.glob(pattern, false, true)
+	if #files == 0 then
+		return ''
+	end
+	return files[1]
+end
+
 -- replace @ token from command table
 ---@param command table config.<command>
 M.replace_cmd_token = function(command)
 	local file = M.get_filedata(0)
-	local cmd_t = vim.list_extend({command.engine}, command.args)
+	local cmd_t = vim.list_extend({command.shell, command.shellcmdflag, command.engine}, command.args)
 	local cmd_s = table.concat(cmd_t, ' ')
+	local pdfpath = ''
+	if cmd_s:find('@pdf') then
+		pdfpath = get_filepath(file.filepath, file.filename_only .. '.pdf')
+	end
+
 	-- replace token
 	cmd_s = cmd_s:gsub('(@texname)', file.filename_only)
 				 :gsub('(@tex)', file.filename)
 				 :gsub('(@line)', file.line)
+				 :gsub('(@pdf)', pdfpath)
 	cmd_t = vim.split(cmd_s, ' ', {plain = true, trimempty = true})
 
 	return cmd_t
