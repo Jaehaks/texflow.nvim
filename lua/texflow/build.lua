@@ -9,7 +9,7 @@ local job_id = { -- check job is running
 }
 
 -- compile file
-M.compile = function(config)
+M.compile = function(opts, ext)
 	-- check job is running
 	if job_id.compile then
 		vim.notify('TexFlow : compile is running! Please wait to completion', vim.log.levels.WARN)
@@ -27,11 +27,11 @@ M.compile = function(config)
 	end
 
 	-- get config
-	config = vim.tbl_deep_extend('force', Config.get(), config or {})
+	opts = vim.tbl_deep_extend('force', Config.get(), opts or {})
 
 	-- check latex engine
-	if not Utils.has_command(config.latex.engine) then
-		vim.notify('TexFlow : ' .. config.latex.engine .. 'is not installed', vim.log.levels.ERROR)
+	if not Utils.has_command(opts.latex.engine) then
+		vim.notify('TexFlow : ' .. opts.latex.engine .. 'is not installed', vim.log.levels.ERROR)
 		return
 	end
 
@@ -39,19 +39,19 @@ M.compile = function(config)
 	vim.cmd('lcd ' .. file.filepath)
 
 	-- get command with @token is replaced
-	local cmd = Utils.replace_cmd_token(config.latex)
+	local cmd = Utils.replace_cmd_token(opts.latex)
 
 	-- show progress message
 	local ok, fidget = pcall(require, 'fidget')
 	local progress
 	if ok then
 		progress = fidget.progress.handle.create({
-			title = 'compiling with ' .. config.latex.engine .. '...',
+			title = 'compiling with ' .. opts.latex.engine .. '...',
 			message = vim.fn.expand('%'),
 			lsp_client = { name = 'texflow.nvim' }
 		})
 	else
-		vim.print('"' .. vim.fn.expand('%') .. '" compiling with ' .. config.latex.engine .. '...')
+		vim.print('"' .. vim.fn.expand('%') .. '" compiling with ' .. opts.latex.engine .. '...')
 	end
 
 	-- compile start
