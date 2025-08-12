@@ -57,7 +57,7 @@ M.compile = function(opts, ext)
 	-- compile start
 	job_id.compile = vim.fn.jobstart(cmd, {
 		stdout_buffered = true, -- output will be transferred at once when job complete
-		on_exit = function(jid, code)
+		on_exit = function(_, code, _)
 			if code == 0 then
 				if ok then
 					progress:report({
@@ -80,8 +80,8 @@ M.compile = function(opts, ext)
 				end
 			end
 
-			job_id.compile = nil
 			-- restore workspace
+			job_id.compile = nil
 			vim.cmd('lcd ' .. curdir)
 		end
 	})
