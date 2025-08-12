@@ -17,7 +17,6 @@ M.compile = function(opts, ext)
 	end
 
 	-- get data of file
-	local curdir = vim.fn.getcwd()
 	local file = Utils.get_filedata()
 
 	-- check current file is valid tex
@@ -91,7 +90,6 @@ end
 -- view pdf file
 M.view = function (opts)
 	-- get data of file
-	local curdir = vim.fn.getcwd()
 	local file = Utils.get_filedata()
 
 	-- check current file is valid tex
