@@ -35,9 +35,10 @@ end
 -- replace @ token from command table
 ---@param command table config.<command>
 M.replace_cmd_token = function(command)
+	local sep = ':::::' -- separator between command table component
 	local file = M.get_filedata(0)
 	local cmd_t = vim.list_extend({command.shell, command.shellcmdflag, command.engine}, command.args)
-	local cmd_s = table.concat(cmd_t, ' ')
+	local cmd_s = table.concat(cmd_t, sep)
 	local pdfpath = ''
 	if cmd_s:find('@pdf') then
 		pdfpath = get_filepath(file.filepath, file.filename_only .. '.pdf')
@@ -48,7 +49,7 @@ M.replace_cmd_token = function(command)
 				 :gsub('(@tex)', file.filename)
 				 :gsub('(@line)', file.line)
 				 :gsub('(@pdf)', pdfpath)
-	cmd_t = vim.split(cmd_s, ' ', {plain = true, trimempty = true})
+	cmd_t = vim.split(cmd_s, sep, {plain = true, trimempty = true})
 
 	return cmd_t
 end
