@@ -9,13 +9,14 @@ end
 
 -- change separator on directory depends on OS
 ---@param path string relative path
-local function sep_change(path)
-	if has_win32 then
-		return path:gsub('/', '\\')
-	else
-		return path:gsub('\\', '/')
-	end
+---@param sep_to string path separator after change
+---@param sep_from string path separator before change
+local function sep_unify(path, sep_to, sep_from)
+	sep_to = sep_to or (has_win32 and '\\' or '/')
+	sep_from = sep_from or ((sep_to == '/') and '\\' or '/')
+	return path:gsub(sep_from, sep_to)
 end
+M.sep_unify = sep_unify
 
 -- find files from dir
 ---@param dir string directory path without '/' at tail.  '.' means current path
@@ -23,8 +24,7 @@ end
 local function get_filepath(dir, file)
 	-- find files without suffix option / and return all matched files with list
 	-- the depth will limited by 2
-	-- local pattern = sep_change(dir .. '/*/*/' .. file)
-	local pattern = sep_change(dir .. '/**/' .. file)
+	local pattern = sep_unify(dir .. '/**/' .. file)
 	local files = vim.fn.glob(pattern, false, true)
 	if #files == 0 then
 		return ''
