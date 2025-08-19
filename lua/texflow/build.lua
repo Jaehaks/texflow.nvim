@@ -133,7 +133,7 @@ M.view = function (opts)
 		buffer = file.bufnr,
 		once = true,
 		callback = function ()
-			vim.fn.jobstop(job_id.viewer)
+			pcall(vim.fn.jobstop, job_id.viewer)
 			job_id.viewer = nil
 		end
 	})
@@ -142,7 +142,7 @@ M.view = function (opts)
 		pattern = '*',
 		once = true,
 		callback = function ()
-			vim.fn.jobstop(job_id.viewer)
+			pcall(vim.fn.jobstop, job_id.viewer)
 			job_id.viewer = nil
 		end
 	})
