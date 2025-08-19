@@ -44,3 +44,61 @@ This is why I am editing it.
 - [texlab](https://github.com/latex-lsp/texlab) : (optional) To highlight grammar and use diagnostics.
 - `latex engine` : (required) To compile latex, I prefer `latexmk` from [MikTex](https://miktex.org/).
 - `viewer engine` : (required) To forward/inverse search, I prefer [sioyek](https://github.com/ahrm/sioyek).
+- `python3` : (required) To forward/inverse search
+	- `pynvim` : (required) To forward/inverse search
+
+
+## Installation
+
+Set `XDG_DATA_HOME` environment variable.
+Server file will be created using this variable.
+
+
+Install `pynvim` using package manager.
+If you want to use `python` in virtual environment, install `pynvim` in virtual environment.
+And use `python` in virtual environment
+
+```powershell
+	pip install pynvim
+```
+
+
+
+Set `vim.g.python3_host_prog` to set python provider.
+```lua
+	vim.g.python3_host_prog = '<python path>/python'
+```
+
+
+
+If you are using `lazy.nvim`.
+You can use lazy load If you want.
+
+```lua
+{
+	'Jaehaks/texflow.nvim',
+	build = ':UpdateRemotePlugins',
+	dependencies = {
+		'j-hui/fidget.nvim',
+	},
+	ft = {'tex', 'latex', 'plaintex'},
+}
+```
+
+After Installation, check `vim.fn.stdpath('data')/rplugin.vim` is created.
+The contents will be like this
+
+```vim
+" python3 plugins
+call remote#host#RegisterPlugin('python3', '<xdg_data_home>/nvim-data/lazy/texflow.nvim/rplugin/python3/InverseSearch.py', [
+      \ {'sync': v:true, 'name': 'Texflow_load_server_mapping', 'type': 'function', 'opts': {}},
+      \ {'sync': v:true, 'name': 'Texflow_prune_server_mapping', 'type': 'function', 'opts': {}},
+      \ {'sync': v:true, 'name': 'Texflow_save_server_mapping', 'type': 'function', 'opts': {}},
+     \ ])
+```
+
+
+
+
+
+
