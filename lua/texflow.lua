@@ -2,6 +2,8 @@ local M = {}
 
 M.setup = function(opts)
 	require("texflow.config").set(opts)
+	vim.fn.Texflow_prune_server_mapping()
+	vim.fn.Texflow_save_server_mapping('recent')
 	vim.api.nvim_create_augroup('TexFlow', {clear = true})
 end
 

@@ -22,6 +22,7 @@ local default_config = {
 		args = {
 			'--reuse-window',
 			'--nofocus',
+			'--inverse-search "' .. vim.g.python3_host_prog .. ' @InverseSearch %1 %2"',
 			'--forward-search-file @tex',
 			'--forward-search-line @line',
 			'@pdf',

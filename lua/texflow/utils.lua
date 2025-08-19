@@ -1,5 +1,4 @@
 local M = {}
-local uv = vim.uv
 local has_win32 = vim.fn.has('win32')
 
 -- check command is executable
@@ -32,6 +31,20 @@ local function get_filepath(dir, file)
 	return files[1]
 end
 
+-- get root of this plugin
+local plugin_root = nil
+local function get_plugin_root()
+	if plugin_root then
+		return plugin_root
+	end
+
+	-- get plugin root from current file
+	local cur_file = debug.getinfo(1, 'S').source:match('^@(.+)')
+	plugin_root = vim.fs.root(cur_file, {'.git'})
+
+	return plugin_root
+end
+
 -- replace @ token from command table
 ---@param command table config.<command>
 M.replace_cmd_token = function(command)
@@ -39,16 +52,22 @@ M.replace_cmd_token = function(command)
 	local file = M.get_filedata(0)
 	local cmd_t = vim.list_extend({command.shell, command.shellcmdflag, command.engine}, command.args)
 	local cmd_s = table.concat(cmd_t, sep)
+	-- @pdf
 	local pdfpath = ''
 	if cmd_s:find('@pdf') then
 		pdfpath = get_filepath(file.filepath, file.filename_only .. '.pdf')
 	end
+	-- @InverseSearch
+	local inverseSearchPath = get_plugin_root() .. '/rplugin/python3/InverseSearch.py'
+	inverseSearchPath = sep_unify(inverseSearchPath)
 
 	-- replace token
 	cmd_s = cmd_s:gsub('(@texname)', file.filename_only)
 				 :gsub('(@tex)', file.filename)
 				 :gsub('(@line)', file.line)
 				 :gsub('(@pdf)', pdfpath)
+				 :gsub('(@InverseSearch)', inverseSearchPath)
+				 :gsub('(@servername)', vim.v.servername)
 	cmd_t = vim.split(cmd_s, sep, {plain = true, trimempty = true})
 
 	return cmd_t

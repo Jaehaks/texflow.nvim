@@ -114,6 +114,7 @@ M.view = function (opts)
 	local ok, fidget = pcall(require, 'fidget')
 
 	-- show viewer start
+	vim.fn.Texflow_save_server_mapping(Utils.sep_unify(file.fullpath, '/'))
 	job_id.viewer = vim.fn.jobstart(cmd, {
 		cwd = file.filepath,
 		detach = false, -- detach = false needs to remove cmd prompt window blinking
