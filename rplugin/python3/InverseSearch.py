@@ -5,7 +5,6 @@ Usage: python inverse_search.py <server_name> <tex_file> <line_number>
 """
 import sys
 
-import pynvim
 from utils.commands import Commands
 from utils.errors import err_notify
 from utils.server import ServerManager
@@ -46,7 +45,7 @@ def main():
     alias = sys.argv[3] if len_args == 4 else filename
 
     # connect to nvim instance and jump to line
-    mg = ServerManager(None, alias) # get
+    mg = ServerManager(None, alias) # get server instance
     cmd = Commands(mg.nvim)
     cmd.jump_to_line(filename, line)
 
