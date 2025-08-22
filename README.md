@@ -1,7 +1,7 @@
 # texflow.nvim
 Make Build and search workflow using `texlab` lsp
 
-## Why?
+# Why?
 
 I've been using [vimtex](https://github.com/lervag/vimtex) and it is cool plugin for managing latex.
 But it has some inconvenient thing to use as I think because I am not good at programming.
@@ -37,7 +37,14 @@ This is why I am editing it.
 > [!NOTE] Note:
 > Development will be continue until I satisfied even though the period is loose.
 
-## Requirements
+
+
+
+
+
+
+
+# Requirements
 
 - [Neovim v0.11.0+](https://github.com/neovim/neovim/releases)
 - [fidget.nvim](https://github.com/j-hui/fidget.nvim) : (optional) To notify process messages.
@@ -47,8 +54,15 @@ This is why I am editing it.
 - `python3` : (required) To forward/inverse search
 	- `pynvim` : (required) To forward/inverse search
 
+It may not work well in UNIX environments because it needs to deal error management.
 
-## Installation
+
+
+
+
+
+
+# Installation
 
 Set `XDG_DATA_HOME` environment variable.
 Server file will be created using this variable.
@@ -59,14 +73,14 @@ If you want to use `python` in virtual environment, install `pynvim` in virtual 
 And use `python` in virtual environment
 
 ```powershell
-	pip install pynvim
+pip install pynvim
 ```
 
 
 
 Set `vim.g.python3_host_prog` to set python provider.
 ```lua
-	vim.g.python3_host_prog = '<python path>/python'
+vim.g.python3_host_prog = '<python path>/python'
 ```
 
 
@@ -76,16 +90,16 @@ You can use lazy load If you want.
 
 ```lua
 {
-	'Jaehaks/texflow.nvim',
-	build = ':UpdateRemotePlugins',
-	dependencies = {
-		'j-hui/fidget.nvim',
-	},
-	ft = {'tex', 'latex', 'plaintex'},
+  'Jaehaks/texflow.nvim',
+  build = ':UpdateRemotePlugins',
+  dependencies = {
+    'j-hui/fidget.nvim',
+  },
+  ft = {'tex', 'latex', 'plaintex'},
 }
 ```
 
-After Installation, check `vim.fn.stdpath('data')/rplugin.vim` is created.
+After Installation, check `vim.fn.stdpath('data')/rplugin.vim` is created properly.
 The contents will be like this
 
 ```vim
@@ -102,3 +116,251 @@ call remote#host#RegisterPlugin('python3', '<xdg_data_home>/nvim-data/lazy/texfl
 
 
 
+
+# Configuration
+<details>
+	<summary> Default configuration </summary>
+
+<br>
+
+Default configuration is below.
+You don't needs to add this if you use `latexmk` and `sioyek` as engine.
+
+
+```lua
+require('texflow').setup({
+  latex = {
+    shell = vim.api.nvim_get_option_value('shell', {scope = 'global'}),
+    shellcmdflag = vim.api.nvim_get_option_value('shellcmdflag', {scope = 'global'}),
+    engine = 'latexmk',
+    args = {
+      '-pdf',
+      '-interaction=nonstopmode',
+      '-synctex=1',
+      '-verbose',
+      '-file-line-error',
+      '@tex',
+    },
+  },
+  viewer = {
+    shell = vim.api.nvim_get_option_value('shell', {scope = 'global'}),
+    shellcmdflag = vim.api.nvim_get_option_value('shellcmdflag', {scope = 'global'}),
+    engine = 'sioyek',
+    args = {
+      '--reuse-window',
+      '--nofocus',
+      '--inverse-search "' .. vim.g.python3_host_prog .. ' @InverseSearch %1 %2"',
+      '--forward-search-file @tex',
+      '--forward-search-line @line',
+      '@pdf',
+    },
+  }
+})
+```
+
+</details>
+
+
+
+
+
+
+
+
+
+
+# Usages
+
+You can change you `texlab` configuration what you want. \
+Default latex engine is `tectonic` but We modified it to match engine which We use to compile.
+
+<details>
+	<summary> My Texlab Configuration </summary>
+
+<br>
+
+```lua
+vim.lsp.config('texlab', {
+  cmd = {'texlab'},
+  filetypes = {'tex', 'plaintex', 'bib'},
+  settings = { -- see https://github.com/latex-lsp/texlab/wiki/Configuration
+    texlab = {
+      build = {
+        executable = 'latexmk',
+        args = {
+          '-interaction=nonstopmode', -- continuous mode compilation
+          '%f',                       -- current file
+        },
+        onSave = false,                 -- build on save (it works when :w but not autocmd save)
+        forwardSearchAfter = false,     -- perform forward search after build
+      },
+      latexFormatter = 'latexindent',
+      latexindent = {
+        modifyLineBreaks = false,
+      }
+    },
+  },
+})
+```
+
+</details>
+
+
+## _How to use construct command arguments?_
+
+If you want to change your latex or viewer command, you can use @token as alias of filename. \
+These @token is supported. They will be replaced with real value before job starts.
+
+| @token         | Description                                                        |
+| -------------- | ------------------------------------------------------------------ |
+| @texname       | file name without extension of current tex file                    |
+| @tex           | file name with extension of current tex file                       |
+| @line          | line number under cursor                                           |
+| @pdf           | file path of pdf file which is corresponding with current tex file |
+| @InverseSearch | file path of python file to inverse-search                         |
+| @servername    | servername of current neovim instance                              |
+
+<details>
+	<summary> My User configuration </summary>
+
+<br>
+
+I am using this configuration using `lazy.nvim`
+
+```lua
+opts = {
+  latex = {
+    engine = 'latexmk',
+    args = {
+      '-pdf',
+      '-outdir=@texname',
+      '-interaction=nonstopmode',
+      '-synctex=1',
+      '@tex',
+    },
+  },
+},
+config = function (_, opts)
+  local texflow = require('texflow')
+  texflow.setup(opts)
+
+  local TexFlowMaps = vim.api.nvim_create_augroup('TexFlowMaps', {clear = true})
+  vim.api.nvim_create_autocmd('FileType', {
+    group = TexFlowMaps,
+    pattern = {'tex', 'latex', 'plaintex'},
+    callback = function ()
+		-- keymap what you want
+    end
+  })
+
+end
+```
+
+</details>
+
+
+
+
+
+
+
+
+
+
+# Features / API
+
+## `Compile`
+
+```lua
+-- You can insert your custom config table as a first argument or leave with '_' if you use your setup.
+-- Compile current buffer once, and open viewer automatically if compile is completed
+require('texflow').compile(_, {openAfter = true})
+-- Compile current buffer once only
+require('texflow').compile(_)
+```
+
+
+
+## `Forward-Search`
+
+```lua
+-- open viewer if there are pdf file which is compiled.
+-- If there are arguments related with forward search in configuration, it will does forward-search
+require('texflow').view()
+```
+
+
+## `Inverse-Search`
+
+### 1) How to Work?
+
+If you compile `*.tex` file with `-synctex=1` option, it will generate `*.synctex.gz` in workspace.
+This file is needed to implement inverse-search. \
+When I click some line in viewer, the information about which line in which tex file.
+The token such as `%l` and `%f` refers to line number and tex file name is different for each viewer. \
+The command mapped to inverse-search is executed when you click somewhere in pdf viewer If you set. \
+\
+Python file in `texflow.nvim` will implement inverse-search without starting neovim instance like `nvim --headless`,
+just detect which neovim instance is opened and open the tex file and move cursor to the line.
+
+### 2) `@InverseSearch` python file
+
+This token means `<installpath>\texflow.nvim\rplugin\python3\InverseSearch.py`. \
+You can execute this file using python and the format is `python @InverseSearch %1 %2 [%3]`. \
+File path of tex file which is associated with the current pdf file is located in `%1`. \
+Line number of tex file which is associated with the current pdf file is located in `%2`. \
+Servername of neovim instance which opens the tex file is located in `%3`. \
+\
+`%3` is optional and it can be an alias or the actual servername such as `\\.\pipe\nvim.<pid>.0` in Windows,
+`/tmp/<username>/<uid>/nvim.<pid>.0` in Unix which is the same value of `vim.v.servername`. \
+Possible alias is `'recent'` which means the last opened neovim instance where `texflow.nvim` is loaded. \
+<u>`texflow.nvim` detects proper neovim instance if you remain `%3` as empty value.</u> \
+\
+There are two cases to implement inverse-search.
+
+### case1) CLI option such as `--inverse-search` is supported in viewer.
+
+You can override inverse-search setting by cli command option.
+Pass `python @InverseSearch %1 %2` as an argument of the option like default configuration.
+You can use python execution file in virtual environment instead of globally `python` execution file.
+
+### case2) CLI option such as `--inverse-search` is `not` supported in viewer.
+
+Set the command  `python <installpath>\texflow.nvim\rplugin\python3\InverseSearch.py %1 %2` in inverse-search setting of viewer.
+
+
+
+
+
+
+
+
+
+
+# Viewer Examples
+
+## [1) sioyek](https://github.com/ahrm/sioyek/tree/development)
+
+It is recommended that you use the development branch. \
+<u>`--inverse-search` option accepts only one parameter. So you must enclose the command with quotes("").</u> \
+`--nofocus` option doesn't work yet.
+
+```lua
+engine = 'sioyek',
+args = {
+  '--reuse-window',
+  '--nofocus',
+  '--inverse-search "' .. vim.g.python3_host_prog .. ' @InverseSearch %1 %2"',
+  '--forward-search-file @tex',
+  '--forward-search-line @line',
+  '@pdf',
+},
+```
+
+
+
+
+
+# Acknowledgements
+
+This plugin is inspired by [vimtex](https://github.com/lervag/vimtex)
