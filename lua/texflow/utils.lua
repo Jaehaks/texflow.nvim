@@ -74,6 +74,14 @@ M.replace_cmd_token = function(command)
 end
 
 -- get file data
+---@class texflow.filedata table includes current state of file
+---@field line number line number under the cursor
+---@field fullpath string absolute path of the file
+---@field filepath string absolute path of parent directory of the file
+---@field filename string filename with extension
+---@field filename_only string filename without extension
+---@field extension string extension of the file
+---@field bufnr number buffer number of the file
 M.get_filedata = function(bufnr)
 	bufnr = bufnr or vim.api.nvim_get_current_buf()
 

@@ -2,11 +2,115 @@ local M = {}
 local Utils = require('texflow.utils')
 local Config = require('texflow.config')
 
--- local uv = vim.uv or vim.loop
+---@class job_id
+---@field compile number?
+---@field viewer number?
 local job_id = { -- check job is running
 	compile = nil,
 	viewer = nil,
 }
+
+-- check fidget availability
+local fidget_avail, fidget = pcall(require, 'fidget')
+
+
+
+
+
+-- check current job_id is alive
+---@param type string field name of job_id table
+local function is_job_alive(type)
+	local job = job_id[type]
+	if not job then
+		return false -- if not return false
+	end
+
+	-- Check if job is actually running
+	local status = vim.fn.jobwait({job}, 0)
+	if status[1] ~= -1 then -- job finished but we didn't get notified
+		job_id[type] = nil
+		return false
+	end
+	return true
+end
+
+
+-- set autocmd for viewer, If tex buffer is deleted, the corresponding pdf file viewer is terminated
+---@param type string field name of job_id
+---@param file texflow.filedata file data
+local function set_autocmd(type, file)
+	vim.print(is_job_alive('viewer'))
+	if type == 'viewer' and not is_job_alive('viewer') then
+		local function stop_viewer()
+			pcall(vim.fn.jobstop, job_id.viewer)
+			job_id.viewer = nil
+		end
+
+		-- make autocmd to close job when related tex buffer is closed
+		vim.api.nvim_create_autocmd({'BufDelete'}, {
+			group = 'TexFlow',
+			buffer = file.bufnr,
+			once = true,
+			callback = stop_viewer,
+		})
+		vim.api.nvim_create_autocmd({'VimLeave'}, {
+			group = 'TexFlow',
+			pattern = '*',
+			once = true,
+			callback = stop_viewer,
+		})
+	end
+end
+
+-- open viewer
+---@param file texflow.filedata
+---@param opts texflow.config
+local function view_core(file, opts)
+	-- get command with @token is replaced
+	local cmd = Utils.replace_cmd_token(opts.viewer)
+
+	-- show viewer start
+	set_autocmd('viewer', file)
+	vim.fn.Texflow_save_server_mapping(Utils.sep_unify(file.fullpath, '/'))
+	job_id.viewer = vim.fn.jobstart(cmd, {
+		cwd = file.filepath,
+		detach = false, -- detach = false needs to remove cmd prompt window blinking
+		on_exit = function (_, code, _)
+			if code ~= 0 then
+				if fidget_avail then
+					fidget.notify('Fail to open viewer(' .. code .. ')', vim.log.levels.ERROR, { ttl = 1 })
+				else
+					vim.notify('[TexFlow] Fail to open viewer(' .. code .. ')', vim.log.levels.ERROR)
+				end
+			end
+			job_id.viewer = nil
+		end})
+
+end
+
+-- view pdf file
+M.view = function (opts)
+	-- get data of file
+	local file = Utils.get_filedata()
+
+	-- check current file is valid tex
+	if not Utils.is_tex(file) then
+		vim.notify('TexFlow : Execute command on *.tex file only', vim.log.levels.ERROR)
+		return
+	end
+
+	-- get opts
+	opts = vim.tbl_deep_extend('force', Config.get(), opts or {})
+
+	-- check viewer engine
+	if not Utils.has_command(opts.viewer.engine) then
+		vim.notify('TexFlow : ' .. opts.viewer.engine .. 'is not installed', vim.log.levels.ERROR)
+		return
+	end
+
+	-- show view
+	view_core(file, opts)
+end
 
 -- compile file
 M.compile = function(opts, ext)
@@ -38,9 +142,8 @@ M.compile = function(opts, ext)
 	local cmd = Utils.replace_cmd_token(opts.latex)
 
 	-- show progress message
-	local ok, fidget = pcall(require, 'fidget')
 	local progress
-	if ok then
+	if fidget_avail then
 		progress = fidget.progress.handle.create({
 			title = 'compiling with ' .. opts.latex.engine .. '...',
 			message = vim.fn.expand('%'),
@@ -56,7 +159,7 @@ M.compile = function(opts, ext)
 		stdout_buffered = true, -- output will be transferred at once when job complete
 		on_exit = function(_, code, _)
 			if code == 0 then
-				if ok then
+				if fidget_avail then
 					progress:report({
 						title = 'compile completed!',
 						done = true,
@@ -68,10 +171,10 @@ M.compile = function(opts, ext)
 
 				-- open viewer after compile
 				if ext and ext.openAfter then
-					M.view()
+					view_core(file, opts)
 				end
 			else
-				if ok then
+				if fidget_avail then
 					progress:report({
 						title = 'compile ERROR(' .. code .. ')',
 						done = true,
@@ -86,68 +189,5 @@ M.compile = function(opts, ext)
 		end
 	})
 end
-
--- view pdf file
-M.view = function (opts)
-	-- get data of file
-	local file = Utils.get_filedata()
-
-	-- check current file is valid tex
-	if not Utils.is_tex(file) then
-		vim.notify('TexFlow : Execute command on *.tex file only', vim.log.levels.ERROR)
-		return
-	end
-
-	-- get opts
-	opts = vim.tbl_deep_extend('force', Config.get(), opts or {})
-
-	-- check viewer engine
-	if not Utils.has_command(opts.viewer.engine) then
-		vim.notify('TexFlow : ' .. opts.viewer.engine .. 'is not installed', vim.log.levels.ERROR)
-		return
-	end
-
-	-- get command with @token is replaced
-	local cmd = Utils.replace_cmd_token(opts.viewer)
-
-	-- show progress message
-	local ok, fidget = pcall(require, 'fidget')
-
-	-- show viewer start
-	vim.fn.Texflow_save_server_mapping(Utils.sep_unify(file.fullpath, '/'))
-	job_id.viewer = vim.fn.jobstart(cmd, {
-		cwd = file.filepath,
-		detach = false, -- detach = false needs to remove cmd prompt window blinking
-		on_exit = function (_, code, _)
-			if code ~= 0 then
-				if ok then
-					fidget.notify('Fail to open viewer(' .. code .. ')', vim.log.levels.ERROR, { ttl = 1 })
-				else
-					vim.notify('[TexFlow] Fail to open viewer(' .. code .. ')', vim.log.levels.ERROR)
-				end
-			end
-		end})
-
-	-- make autocmd to close job when related tex buffer is closed
-	vim.api.nvim_create_autocmd({'BufDelete'}, {
-		group = 'TexFlow',
-		buffer = file.bufnr,
-		once = true,
-		callback = function ()
-			pcall(vim.fn.jobstop, job_id.viewer)
-			job_id.viewer = nil
-		end
-	})
-	vim.api.nvim_create_autocmd({'VimLeave'}, {
-		group = 'TexFlow',
-		pattern = '*',
-		once = true,
-		callback = function ()
-			pcall(vim.fn.jobstop, job_id.viewer)
-			job_id.viewer = nil
-		end
-	})
-end
-
 
 return M
