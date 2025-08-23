@@ -2,12 +2,20 @@ local M = {}
 local Utils = require('texflow.utils')
 local Config = require('texflow.config')
 
----@class job_id
+---@class texflow.job_id
 ---@field compile number?
 ---@field viewer number?
 local job_id = { -- check job is running
 	compile = nil,
 	viewer = nil,
+}
+
+---@class texflow.valid check valid condition
+---@field latex boolean?
+---@field viewer boolean?
+local valid = {
+	latex = false,
+	viewer = false,
 }
 
 -- check fidget availability
@@ -62,6 +70,42 @@ local function set_autocmd(type, file)
 	end
 end
 
+-- check valid condition
+---@param type string field name of texflow.valid
+---@param file texflow.filedata
+---@param opts texflow.config
+local function valid_check(type, file, opts)
+	-- check job is running
+	if type == 'latex' then
+		if job_id.compile then
+			vim.notify('TexFlow : ' .. type .. ' is running! Please wait to completion', vim.log.levels.WARN)
+			return false
+		end
+	end
+
+	if valid[type] then -- if it is valid, don't need to check more.
+		vim.print('valid check is already')
+		return true
+	end
+
+	-- check current file is valid tex
+	if not Utils.is_tex(file) then
+		vim.notify('TexFlow : Execute command on *.tex file only', vim.log.levels.ERROR)
+		valid[type] = false
+		return valid[type]
+	end
+
+	-- check latex engine
+	if not Utils.has_command(opts[type].engine) then
+		vim.notify('TexFlow : ' .. opts[type].engine .. 'is not installed', vim.log.levels.ERROR)
+		valid[type] = false
+		return valid[type]
+	end
+
+	valid[type] = true
+	return valid[type]
+end
+
 -- open viewer
 ---@param file texflow.filedata
 ---@param opts texflow.config
@@ -90,21 +134,14 @@ end
 
 -- view pdf file
 M.view = function (opts)
-	-- get data of file
-	local file = Utils.get_filedata()
-
-	-- check current file is valid tex
-	if not Utils.is_tex(file) then
-		vim.notify('TexFlow : Execute command on *.tex file only', vim.log.levels.ERROR)
-		return
-	end
-
 	-- get opts
 	opts = vim.tbl_deep_extend('force', Config.get(), opts or {})
 
-	-- check viewer engine
-	if not Utils.has_command(opts.viewer.engine) then
-		vim.notify('TexFlow : ' .. opts.viewer.engine .. 'is not installed', vim.log.levels.ERROR)
+	-- get data of file
+	local file = Utils.get_filedata()
+
+	-- check valid to execute command
+	if not valid_check('viewer', file, opts) then
 		return
 	end
 
@@ -114,27 +151,14 @@ end
 
 -- compile file
 M.compile = function(opts, ext)
-	-- check job is running
-	if job_id.compile then
-		vim.notify('TexFlow : compile is running! Please wait to completion', vim.log.levels.WARN)
-		return
-	end
+	-- get config
+	opts = vim.tbl_deep_extend('force', Config.get(), opts or {})
 
 	-- get data of file
 	local file = Utils.get_filedata()
 
-	-- check current file is valid tex
-	if not Utils.is_tex(file) then
-		vim.notify('TexFlow : Execute command on *.tex file only', vim.log.levels.ERROR)
-		return
-	end
-
-	-- get config
-	opts = vim.tbl_deep_extend('force', Config.get(), opts or {})
-
-	-- check latex engine
-	if not Utils.has_command(opts.latex.engine) then
-		vim.notify('TexFlow : ' .. opts.latex.engine .. 'is not installed', vim.log.levels.ERROR)
+	-- check valid to execute command
+	if not valid_check('latex', file, opts) then
 		return
 	end
 
@@ -184,7 +208,6 @@ M.compile = function(opts, ext)
 					vim.notify('compile failed! (' .. code .. ')', vim.log.levels.ERROR)
 				end
 			end
-
 			job_id.compile = nil
 		end
 	})
