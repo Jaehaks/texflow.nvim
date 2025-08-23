@@ -23,19 +23,12 @@ local fidget_avail, fidget = pcall(require, 'fidget')
 
 
 
-
-
--- check current job_id is alive
+-- clear job_id flag when the job is alive only
 ---@param type string field name of job_id table
-local function is_job_alive(type)
-	local job = job_id[type]
-	if not job then
-		return false -- if not return false
-	end
-
+local function job_clear(type)
 	-- Check if job is actually running
-	local status = vim.fn.jobwait({job}, 0)
-	if status[1] ~= -1 then -- job finished but we didn't get notified
+	local status = vim.fn.jobwait({job_id[type]}, 0)
+	if status[1] ~= -1 then -- if job is terminated, status is -1
 		job_id[type] = nil
 		return false
 	end
@@ -47,26 +40,29 @@ end
 ---@param type string field name of job_id
 ---@param file texflow.filedata file data
 local function set_autocmd(type, file)
-	vim.print(is_job_alive('viewer'))
-	if type == 'viewer' and not is_job_alive('viewer') then
+	if type == 'viewer' and not job_id.viewer then
+		-- stop local function
 		local function stop_viewer()
-			pcall(vim.fn.jobstop, job_id.viewer)
+			vim.fn.jobstop(job_id.viewer)
 			job_id.viewer = nil
 		end
 
 		-- make autocmd to close job when related tex buffer is closed
+		vim.api.nvim_create_augroup('TexFlow.Viewer', {clear = true})
 		vim.api.nvim_create_autocmd({'BufDelete'}, {
-			group = 'TexFlow',
+			group = 'TexFlow.Viewer',
 			buffer = file.bufnr,
 			once = true,
 			callback = stop_viewer,
 		})
 		vim.api.nvim_create_autocmd({'VimLeave'}, {
-			group = 'TexFlow',
+			group = 'TexFlow.Viewer',
 			pattern = '*',
 			once = true,
 			callback = stop_viewer,
 		})
+	elseif type == 'compile' and not job_id.compile then
+
 	end
 end
 
@@ -114,9 +110,9 @@ local function view_core(file, opts)
 	local cmd = Utils.replace_cmd_token(opts.viewer)
 
 	-- show viewer start
-	set_autocmd('viewer', file)
 	vim.fn.Texflow_save_server_mapping(Utils.sep_unify(file.fullpath, '/'))
-	job_id.viewer = vim.fn.jobstart(cmd, {
+	set_autocmd('viewer', file)
+	local jid = vim.fn.jobstart(cmd, {
 		cwd = file.filepath,
 		detach = false, -- detach = false needs to remove cmd prompt window blinking
 		on_exit = function (_, code, _)
@@ -127,9 +123,14 @@ local function view_core(file, opts)
 					vim.notify('[TexFlow] Fail to open viewer(' .. code .. ')', vim.log.levels.ERROR)
 				end
 			end
-			job_id.viewer = nil
-		end})
+			job_clear('viewer')
+		end}
+	)
 
+	-- The first job id recorded when a viewer was created after it was not there
+	if not job_id.viewer then
+		job_id.viewer = jid
+	end
 end
 
 -- view pdf file
