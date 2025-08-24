@@ -141,6 +141,7 @@ require('texflow').setup({
       '-file-line-error',
       '@tex',
     },
+	openAfter = false, -- open viewer after compile automatically
   },
   viewer = {
     shell = vim.api.nvim_get_option_value('shell', {scope = 'global'}),

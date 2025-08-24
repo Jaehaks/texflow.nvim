@@ -10,6 +10,7 @@ local default_config = {
 	---@field shellcmdflag string shell command arguments (ex, /c /n)
 	---@field engine string compile engine for latex
 	---@field args table arguments for latex engine
+	---@field openAfter boolean open viewer after compile.
 	latex = {
 		shell = vim.api.nvim_get_option_value('shell', {scope = 'global'}),
 		shellcmdflag = vim.api.nvim_get_option_value('shellcmdflag', {scope = 'global'}),
@@ -22,7 +23,9 @@ local default_config = {
 			'-file-line-error',
 			'@tex',
 		},
+		openAfter = false,
 	},
+
 	---@class texflow.config.viewer
 	---@field shell string shell command (ex, cmd, powershell)
 	---@field shellcmdflag string shell command arguments (ex, /c /n)

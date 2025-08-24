@@ -150,19 +150,10 @@ M.view = function (opts)
 	view_core(file, opts)
 end
 
--- compile file
-M.compile = function(opts, ext)
-	-- get config
-	opts = vim.tbl_deep_extend('force', Config.get(), opts or {})
-
-	-- get data of file
-	local file = Utils.get_filedata()
-
-	-- check valid to execute command
-	if not valid_check('latex', file, opts) then
-		return
-	end
-
+-- compile tex file
+---@param file texflow.filedata
+---@param opts texflow.config
+local function compile_core(file, opts)
 	-- get command with @token is replaced
 	local cmd = Utils.replace_cmd_token(opts.latex)
 
@@ -185,33 +176,43 @@ M.compile = function(opts, ext)
 		on_exit = function(_, code, _)
 			if code == 0 then
 				if fidget_avail then
-					progress:report({
-						title = 'compile completed!',
-						done = true,
-					})
+					progress:report({ title = 'compile completed!', done = true, })
 					progress:finish()
 				else
 					vim.notify('compile completed!', vim.log.levels.INFO)
 				end
 
 				-- open viewer after compile
-				if ext and ext.openAfter then
+				if opts.latex.openAfter then
 					view_core(file, opts)
 				end
 			else
 				if fidget_avail then
-					progress:report({
-						title = 'compile ERROR(' .. code .. ')',
-						done = true,
-					})
+					progress:report({ title = 'compile ERROR(' .. code .. ')', done = true, })
 					progress:finish()
 				else
 					vim.notify('compile failed! (' .. code .. ')', vim.log.levels.ERROR)
 				end
 			end
-			job_id.compile = nil
+			job_clear('compile')
 		end
 	})
+end
+
+-- compile file
+M.compile = function(opts)
+	-- get config
+	opts = vim.tbl_deep_extend('force', Config.get(), opts or {})
+
+	-- get data of file
+	local file = Utils.get_filedata()
+
+	-- check valid to execute command
+	if not valid_check('latex', file, opts) then
+		return
+	end
+
+	compile_core(file, opts)
 end
 
 return M
