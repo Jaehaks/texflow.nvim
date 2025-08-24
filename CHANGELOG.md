@@ -1,16 +1,27 @@
 # ChnageLog
 
-## 2025-08-19
-
-### Features
-- Implement `Inverse Search` using `pynvim` [5afce70](https://github.com/Jaehaks/texflow.nvim/commit/5afce70821e145114dfef71cbc08ad6cbecd8fe6)
-	- ✔️ Inverse Searching using cli option of viewer is confirmed.
-	- ❓Inverse Searching using setting of viewer is considered to implement. But it needs to check.
-- replace `sep_change()` with `sep_unify()` [a88c9dd](https://github.com/Jaehaks/texflow.nvim/commit/a88c9dd9905c7a6c956fdbff976864eb0f0bd773)
+## 2025-08-23
 
 ### Bug fixed
-- Prevent error if viewer is closed first before tex file is closed [ff5917f](https://github.com/Jaehaks/texflow.nvim/commit/ff5917f3decb0194b15c8f60ef4d4040291e3f0c)
-- Add distinguishable command separator for `replace_cmd_token()` [cd31930](https://github.com/Jaehaks/texflow.nvim/commit/cd3193063c0c1cd0af8cb8dbb19f08ba847aa849)
+- Fix for autocmd to close pdf viewer when tex file is closed [8602a65](https://github.com/Jaehaks/texflow.nvim/commit/8602a65d267cb85a2e14a6971980f349f7166ce3)
+	- Original behavior is from [b9cfcc0](https://github.com/Jaehaks/texflow.nvim/commit/b9cfcc01a219e7c82d6f3e5eafef331e726eb7b2)
+
+## 2025-08-22
+
+### Style
+- Reconstruct `build.lua` to separate and make simpler. [ab57e14](https://github.com/Jaehaks/texflow.nvim/commit/ab57e148175b9e879a6abec09d19e4c3d493477d)
+
+### Doc
+- Add Usage / Features [ca5aa9b](https://github.com/Jaehaks/texflow.nvim/commit/ca5aa9bf02d075915d50a633a14f5384b5851ff3)
+
+## 2025-08-12
+
+### Features
+- Add python library to implement Inverse Search
+	- ✔️ Inverse Searching using cli option of viewer is confirmed
+
+### Bug fixed
+- Add `pcall()` to `jobstop` to deal with nil job id
 
 ## 2025-08-12
 
