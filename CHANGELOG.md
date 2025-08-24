@@ -1,5 +1,13 @@
 # ChnageLog
 
+## 2025-08-24
+
+### Features
+- Add `onSave` config to implement continuous compile [74ddd42](https://github.com/Jaehaks/texflow.nvim/commit/74ddd4246c1774d18ded08d71fcbd98c0ff22040)
+
+### Bug fixed
+- `openAfter` config is belong to `texflow.config.latex` configuration [29fcf7a](https://github.com/Jaehaks/texflow.nvim/commit/29fcf7a9c257464a8022d72b2accdb88448eda9d)
+
 ## 2025-08-23
 
 ### Bug fixed
