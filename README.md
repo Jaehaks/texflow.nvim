@@ -141,7 +141,9 @@ require('texflow').setup({
       '-file-line-error',
       '@tex',
     },
-	openAfter = false, -- open viewer after compile automatically
+	openAfter = false,	-- open viewer after compile automatically
+						-- If you set forward-search in viewer configuration, forward search is executed
+	onSave = false,		-- compile *.tex automatically after buffer is saved
   },
   viewer = {
     shell = vim.api.nvim_get_option_value('shell', {scope = 'global'}),
@@ -189,8 +191,8 @@ vim.lsp.config('texlab', {
       build = {
         executable = 'latexmk',
         args = {
-          '-interaction=nonstopmode', -- continuous mode compilation
-          '%f',                       -- current file
+          '-interaction=nonstopmode',   -- continuous mode compilation
+          '%f',                         -- current file
         },
         onSave = false,                 -- build on save (it works when :w but not autocmd save)
         forwardSearchAfter = false,     -- perform forward search after build
@@ -239,6 +241,7 @@ opts = {
       '-synctex=1',
       '@tex',
     },
+	openAfter = true,
   },
 },
 config = function (_, opts)
@@ -253,7 +256,6 @@ config = function (_, opts)
 		-- keymap what you want
     end
   })
-
 end
 ```
 
@@ -275,9 +277,21 @@ end
 ```lua
 -- You can insert your custom config table as a first argument or leave with '_' if you use your setup.
 -- Compile current buffer once, and open viewer automatically if compile is completed
-require('texflow').compile(_, {openAfter = true})
+require('texflow').compile({
+	latex = {
+		openAfter = true,
+	})
+
+-- If onSave is true, compile() does toggle behavior.
+-- It turns on continuous mode after first compilation, then texflow compiles whenever you save file.
+-- If you call this function again, It turns off continuous mode without compilation
+require('texflow').compile({
+	latex = {
+		openAfter = true,
+		onSave = true,
+	})
 -- Compile current buffer once only
-require('texflow').compile(_)
+require('texflow').compile()
 ```
 
 

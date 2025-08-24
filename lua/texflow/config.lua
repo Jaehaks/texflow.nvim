@@ -11,6 +11,7 @@ local default_config = {
 	---@field engine string compile engine for latex
 	---@field args table arguments for latex engine
 	---@field openAfter boolean open viewer after compile.
+	---@field onSave boolean compile automatically after save
 	latex = {
 		shell = vim.api.nvim_get_option_value('shell', {scope = 'global'}),
 		shellcmdflag = vim.api.nvim_get_option_value('shellcmdflag', {scope = 'global'}),
@@ -24,6 +25,7 @@ local default_config = {
 			'@tex',
 		},
 		openAfter = false,
+		onSave = false,
 	},
 
 	---@class texflow.config.viewer

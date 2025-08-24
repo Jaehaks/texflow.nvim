@@ -11,11 +11,24 @@ local job_id = { -- check job is running
 }
 
 ---@class texflow.valid check valid condition
----@field latex boolean?
----@field viewer boolean?
+---@field latex texflow.valid.latex
+---@field viewer texflow.valid.viewer
 local valid = {
-	latex = false,
-	viewer = false,
+	---@class texflow.valid.latex
+	---@field excute boolean?
+	---@field autocmd boolean?
+	latex = {
+		execute = false,
+		autocmd = false,
+	},
+
+	---@class texflow.valid.viewer
+	---@field excute boolean?
+	---@field autocmd boolean?
+	viewer = {
+		execute = false,
+		autocmd = false,
+	},
 }
 
 -- check fidget availability
@@ -61,8 +74,6 @@ local function set_autocmd(type, file)
 			once = true,
 			callback = stop_viewer,
 		})
-	elseif type == 'compile' and not job_id.compile then
-
 	end
 end
 
@@ -79,27 +90,26 @@ local function valid_check(type, file, opts)
 		end
 	end
 
-	if valid[type] then -- if it is valid, don't need to check more.
-		vim.print('valid check is already')
+	if valid[type].execute then -- if it is valid, don't need to check more.
 		return true
 	end
 
 	-- check current file is valid tex
 	if not Utils.is_tex(file) then
 		vim.notify('TexFlow : Execute command on *.tex file only', vim.log.levels.ERROR)
-		valid[type] = false
-		return valid[type]
+		valid[type].execute = false
+		return valid[type].execute
 	end
 
 	-- check latex engine
 	if not Utils.has_command(opts[type].engine) then
 		vim.notify('TexFlow : ' .. opts[type].engine .. 'is not installed', vim.log.levels.ERROR)
-		valid[type] = false
-		return valid[type]
+		valid[type].execute = false
+		return valid[type].execute
 	end
 
-	valid[type] = true
-	return valid[type]
+	valid[type].execute = true
+	return valid[type].execute
 end
 
 -- open viewer
@@ -186,6 +196,20 @@ local function compile_core(file, opts)
 				if opts.latex.openAfter then
 					view_core(file, opts)
 				end
+
+				-- toggle onSave autocmd
+				if opts.latex.onSave then
+					vim.api.nvim_create_augroup('TexFlow.Compile', {clear = true})
+					vim.api.nvim_create_autocmd({'BufWritePost'}, {
+						group = 'TexFlow.Compile',
+						buffer = file.bufnr,
+						callback = function ()
+							compile_core(file, opts)
+						end,
+					})
+					valid['latex'].autocmd = true
+					vim.notify('TexFlow : compile on save mode ON', vim.log.levels.INFO)
+				end
 			else
 				if fidget_avail then
 					progress:report({ title = 'compile ERROR(' .. code .. ')', done = true, })
@@ -206,6 +230,18 @@ M.compile = function(opts)
 
 	-- get data of file
 	local file = Utils.get_filedata()
+
+	-- if opts.latex.onSave set, compile() toggle autocmd
+	if valid.latex.autocmd then
+		vim.api.nvim_clear_autocmds({
+			event = 'BufWritePost',
+			buffer = file.bufnr,
+			group = 'TexFlow.Compile'
+		})
+		valid['latex'].autocmd = false
+		vim.notify('TexFlow : compile on save mode OFF', vim.log.levels.INFO)
+		return
+	end
 
 	-- check valid to execute command
 	if not valid_check('latex', file, opts) then
