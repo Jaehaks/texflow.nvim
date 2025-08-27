@@ -239,6 +239,7 @@ opts = {
       '-outdir=@texname',
       '-interaction=nonstopmode',
       '-synctex=1',
+	  '-file-line-error',
       '@tex',
     },
 	openAfter = true,
@@ -278,21 +279,34 @@ end
 -- You can insert your custom config table as a first argument or leave with '_' if you use your setup.
 -- Compile current buffer once, and open viewer automatically if compile is completed
 require('texflow').compile({
-	latex = {
-		openAfter = true,
-	})
+  latex = {
+    openAfter = true,
+  })
 
 -- If onSave is true, compile() does toggle behavior.
 -- It turns on continuous mode after first compilation, then texflow compiles whenever you save file.
 -- If you call this function again, It turns off continuous mode without compilation
 require('texflow').compile({
-	latex = {
-		openAfter = true,
-		onSave = true,
-	})
+  latex = {
+    openAfter = true,
+    onSave = true,
+  })
 -- Compile current buffer once only
 require('texflow').compile()
 ```
+
+
+### `Compile:Diagnostics`
+
+`Texflow.nvim` supports showing diagnostics in statuscolumn like lsp. \
+These diagnostics are from `*.log` file after `*.tex` file is compiled. `Texflow.nvim` parses the error messages
+and show at proper line number which is related with error or warning. \
+You must includes `--file-line-error` argument in your latex engine configuration to parse error.
+
+<u>There are some limitations to show diagnostics.</u>
+1) All error/warning in log file doesn't mentioned column number. All diagnostics from `Texflow` will show at column 0.
+2) Not all warning in log file have line number. These warning will be shown at first line of each `*.tex` file.
+
 
 
 
