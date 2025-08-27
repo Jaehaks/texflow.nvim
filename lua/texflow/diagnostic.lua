@@ -55,8 +55,6 @@ local function add_diagnostic(file, data)
 			lnum = unpack(under)
 			mtype = vim.diagnostic.severity.WARN
 		end
-		vim.print(msg)
-
 
 		local item = {
 			filename = filename or file.filename,
@@ -130,9 +128,6 @@ M.errorCheck = function (opts)
 end
 
 
--- TEST:
--- local file = Utils.get_filedata(4)
--- M.errorCheck()
 
 
 

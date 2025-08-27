@@ -177,7 +177,7 @@ local function compile_core(file, opts)
 			lsp_client = { name = 'texflow.nvim' }
 		})
 	else
-		vim.print('"' .. vim.fn.expand('%') .. '" compiling with ' .. opts.latex.engine .. '...')
+		vim.notify('"' .. vim.fn.expand('%') .. '" compiling with ' .. opts.latex.engine .. '...', vim.log.levels.INFO)
 	end
 
 	-- compile start
