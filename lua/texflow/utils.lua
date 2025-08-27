@@ -52,14 +52,17 @@ M.replace_cmd_token = function(command)
 	local file = M.get_filedata(0)
 	local cmd_t = vim.list_extend({command.shell, command.shellcmdflag, command.engine}, command.args)
 	local cmd_s = table.concat(cmd_t, sep)
+
 	-- @pdf
-	local pdfpath = ''
-	if cmd_s:find('@pdf') then
-		pdfpath = get_filepath(file.filepath, file.filename_only .. '.pdf')
-	end
+	local pdfpath = file.pdffile
+
 	-- @InverseSearch
 	local inverseSearchPath = get_plugin_root() .. '/rplugin/python3/InverseSearch.py'
 	inverseSearchPath = sep_unify(inverseSearchPath)
+
+	-- @LogParser
+	local LogParserPath = get_plugin_root() .. '/rplugin/python3/LogParser.py'
+	LogParserPath = sep_unify(LogParserPath)
 
 	-- replace token
 	cmd_s = cmd_s:gsub('(@texname)', file.filename_only)
@@ -67,6 +70,7 @@ M.replace_cmd_token = function(command)
 				 :gsub('(@line)', file.line)
 				 :gsub('(@pdf)', pdfpath)
 				 :gsub('(@InverseSearch)', inverseSearchPath)
+				 :gsub('(@LogParser)', LogParserPath)
 				 :gsub('(@servername)', vim.v.servername)
 	cmd_t = vim.split(cmd_s, sep, {plain = true, trimempty = true})
 
@@ -82,6 +86,8 @@ end
 ---@field filename_only string filename without extension
 ---@field extension string extension of the file
 ---@field bufnr number buffer number of the file
+---@field pdffile string full filepath of pdf file related with tex
+---@field logfile string full filepath of log file related with tex
 M.get_filedata = function(bufnr)
 	bufnr = bufnr or vim.api.nvim_get_current_buf()
 
@@ -91,6 +97,8 @@ M.get_filedata = function(bufnr)
 	local filename      = vim.fn.fnamemodify(fullpath, ':t')
 	local filename_only = vim.fn.fnamemodify(filename, ':r')
 	local extension     = vim.fn.fnamemodify(filename, ':e')
+	local pdffile 		= get_filepath(filepath, filename_only .. '.pdf')
+	local logfile 		= get_filepath(filepath, filename_only .. '.log')
 
 	return {
 		line          = line,
@@ -100,6 +108,8 @@ M.get_filedata = function(bufnr)
 		filename_only = filename_only,
 		extension     = extension,
 		bufnr         = bufnr,
+		pdffile 	  = pdffile,
+		logfile 	  = logfile,
 	}
 end
 

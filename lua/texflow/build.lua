@@ -1,6 +1,7 @@
 local M = {}
 local Utils = require('texflow.utils')
 local Config = require('texflow.config')
+local Diag = require('texflow.diagnostic')
 
 ---@class texflow.job_id
 ---@field compile number?
@@ -217,6 +218,10 @@ local function compile_core(file, opts)
 				else
 					vim.notify('compile failed! (' .. code .. ')', vim.log.levels.ERROR)
 				end
+
+				-- show diagnostics for error
+				Diag.errorCheck(opts)
+
 			end
 			job_clear('compile')
 		end
