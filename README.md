@@ -275,7 +275,7 @@ end
 
 ## `Compile`
 
-![compile and onSave](./demo/250827-compile,onsave.mp4)
+![250827-compile_onsave](https://github.com/user-attachments/assets/6c4d2e38-e186-4944-9310-012f62554ff8)
 
 ```lua
 -- You can insert your custom config table as a first argument or leave with '_' if you use your setup.
@@ -298,7 +298,10 @@ require('texflow').compile()
 ```
 
 
+
 ### `Compile:Diagnostics`
+
+![250827-compile_diagnostic](https://github.com/user-attachments/assets/e9184a8e-3a32-434d-b91b-e69ac4de0a6b)
 
 `Texflow.nvim` supports showing diagnostics in statuscolumn like lsp. \
 These diagnostics are from `*.log` file after `*.tex` file is compiled. `Texflow.nvim` parses the error messages
@@ -314,6 +317,8 @@ You must includes `--file-line-error` argument in your latex engine configuratio
 
 ## `Forward-Search`
 
+![250827-compile_and_forward-search](https://github.com/user-attachments/assets/b25d3ca3-da20-4a34-984d-b6e97750ba7f)
+
 ```lua
 -- open viewer if there are pdf file which is compiled.
 -- If there are arguments related with forward search in configuration, it will does forward-search
@@ -322,6 +327,8 @@ require('texflow').view()
 
 
 ## `Inverse-Search`
+
+![250827-inverse-search](https://github.com/user-attachments/assets/17fbddfc-99a6-460c-acd5-13404ca29153)
 
 ### 1) How to Work?
 
