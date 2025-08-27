@@ -1,5 +1,11 @@
 # ChnageLog
 
+## 2025-08-27
+
+### Features
+- Add `Diagnostics` feature after compile to show diagnostic result in statuscolumn [a775c44](https://github.com/Jaehaks/texflow.nvim/commit/a775c4431c6baa3adecf2bbdf153e74b8b4f6446)
+	- Source name of diagnostics is `texflow`
+
 ## 2025-08-24
 
 ### Features
