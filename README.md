@@ -339,9 +339,34 @@ You can override inverse-search setting by cli command option.
 Pass `python @InverseSearch %1 %2` as an argument of the option like default configuration.
 You can use python execution file in virtual environment instead of globally `python` execution file.
 
+For example, for `sioyek`, you can add this configuration in `setup()` (It is default)
+
+```lua
+{
+  engine = 'sioyek',
+  args = {
+    '--reuse-window',
+    '--nofocus',
+    '--inverse-search "python @InverseSearch %1 %2"',
+    '--forward-search-file @tex',
+    '--forward-search-line @line',
+    '@pdf',
+  },
+}
+```
+
+
 ### case2) CLI option such as `--inverse-search` is `not` supported in viewer.
 
-Set the command  `python <installpath>\texflow.nvim\rplugin\python3\InverseSearch.py %1 %2` in inverse-search setting of viewer.
+Set the command in inverse-search setting of viewer.
+
+For example, for `sioyek`, you can edit `prefs_user.config` like this.
+```powershell
+inverse_search_command python <installpath>\texflow.nvim\rplugin\python3\InverseSearch.py "%1" %2
+```
+
+
+
 
 
 
