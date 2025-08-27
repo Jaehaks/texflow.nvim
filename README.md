@@ -275,6 +275,8 @@ end
 
 ## `Compile`
 
+![compile and onSave](https://github.com/Jaehaks/texflow.nvim/blob/main/demo/250827-compile_onsave.gif)
+
 ```lua
 -- You can insert your custom config table as a first argument or leave with '_' if you use your setup.
 -- Compile current buffer once, and open viewer automatically if compile is completed
