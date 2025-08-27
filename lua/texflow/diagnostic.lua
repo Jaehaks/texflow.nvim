@@ -121,7 +121,6 @@ end
 ---@param opts texflow.config
 M.errorCheck = function (opts)
 	opts = vim.tbl_deep_extend('force', Config.get(), opts or {})
-	-- local file = Utils.get_filedata() -- get again filedata with updated logfile data
 	local file = Utils.get_filedata() -- get again filedata with updated logfile data
 
 	get_log_core_py(file, opts)
