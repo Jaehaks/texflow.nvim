@@ -275,7 +275,7 @@ end
 
 ## `Compile`
 
-![compile and onSave](https://github.com/Jaehaks/texflow.nvim/blob/main/demo/250827-compile,onsave.mp4)
+![compile and onSave](./demo/250827-compile,onsave.mp4)
 
 ```lua
 -- You can insert your custom config table as a first argument or leave with '_' if you use your setup.
