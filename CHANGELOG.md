@@ -1,5 +1,10 @@
 # ChnageLog
 
+## 2025-08-30
+
+### Bug fixed
+- Fix for bug that diagnostics don't be reset after compile success [0fa31f2](https://github.com/Jaehaks/texflow.nvim/commit/0fa31f29919943e960c86985367cc92303e53a9e)
+
 ## 2025-08-27
 
 ### Features
