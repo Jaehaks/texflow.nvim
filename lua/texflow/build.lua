@@ -219,10 +219,9 @@ local function compile_core(file, opts)
 					vim.notify('compile failed! (' .. code .. ')', vim.log.levels.ERROR)
 				end
 
-				-- show diagnostics for error
-				Diag.errorCheck(opts)
-
 			end
+			-- show diagnostics for error
+			Diag.errorCheck(opts)
 			job_clear('compile')
 		end
 	})
