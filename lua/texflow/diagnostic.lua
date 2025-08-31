@@ -8,7 +8,8 @@ local ns_id = vim.api.nvim_create_namespace(ns_name)
 
 -- lua cannot support |(OR) for pattern
 local captures = {
-	error      = "^([^:]+):(%d+): (.+)$",
+	error1      = "^[^:]+:(%d+): (.+)$",
+	error2      = "^!%s+l%.(%d+)%s(.+)$",
 	warn       = "LaTeX Warning:%s+(.*) on input line (%d+)%.",
 	warn_only  = "^LaTeX Warning:%s+[^%d]+%.",
 	over       = "^Overfull.*at lines (%d+)",
@@ -27,17 +28,21 @@ local function add_diagnostic(file, data)
 	-- add item to show diagnostics
 	local diagnostics = {} -- show diagnostics in statuscolumn
 	for _, line in ipairs(data) do
-		local error     = {line:match(captures.error)}
+		local error1    = {line:match(captures.error1)}
+		local error2    = {line:match(captures.error2)}
 		local warn      = {line:match(captures.warn)}
 		local warn_only = {line:match(captures.warn_only)}
 		local over      = {line:match(captures.over)}
 		local under     = {line:match(captures.under)}
 
 
-		local filename, lnum, msg = nil, nil, nil
+		local lnum, msg = nil, nil
 		local mtype, col = nil, nil
-		if error[1] then
-			filename, lnum, msg = unpack(error)
+		if error1[1] then
+			lnum, msg = unpack(error1)
+			mtype = vim.diagnostic.severity.ERROR
+		elseif error2[1] then
+			lnum, msg = unpack(error2)
 			mtype = vim.diagnostic.severity.ERROR
 		elseif warn[1] then
 			msg, lnum = unpack(warn)
@@ -57,12 +62,12 @@ local function add_diagnostic(file, data)
 		end
 
 		local item = {
-			filename = filename or file.filename,
 			lnum = lnum and tonumber(lnum)-1 or 0,
 			col = col or 0,
-			message = msg,
 			severity = mtype,
+			message = msg,
 			source = ns_name,
+			namespace = ns_id,
 		}
 		-- remove duplicated item
 		local key = vim.inspect(item)

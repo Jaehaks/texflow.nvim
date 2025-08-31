@@ -34,9 +34,9 @@ class Parser:
         """
         self.file = file
         self.pattern = pattern
-        self.num_cores = mp.cpu_count()              # Automatically detects the number of system CPU cores
+        self.num_cores = mp.cpu_count()       # Automatically detects the number of system CPU cores
         self.encoding = self.check_encoding()
-        self.chunks = self.get_file_chunks()
+        self.chunks = self.get_file_chunks(1) # don't slicing chunk
 
     def check_encoding(self, encodings:list[str]=enc_candidate) -> str|None:
         """ detect file encoding """
@@ -56,20 +56,23 @@ class Parser:
         err_notify('This file encoding is not included in enc_candidate, Modify `enc_candidate` in ' + __file__ )
         return None
 
-    def get_file_chunks(self) -> list[str]:
+    def get_file_chunks(self, num_cores:int|None=None) -> list[str]:
         """Splits the file into chunks according to the number of cpu cores and returns a list of chunks."""
+        if num_cores is None:
+            num_cores = self.num_cores
+
         with open(self.file, 'rb') as f:         # read file using bytecode for speed
             file_size = os.fstat(f.fileno()).st_size # file size [bytes]
-            chunk_size:int = file_size // self.num_cores
+            chunk_size:int = file_size // num_cores
             chunks: list[str] = []
 
-            for i in range(self.num_cores):
+            for i in range(num_cores):
                 start = i * chunk_size                  # set chuck boundary
-                end = start + chunk_size if i < self.num_cores - 1 else file_size
+                end = start + chunk_size if i < num_cores - 1 else file_size
 
                 _ = f.seek(start)                       # Move focus to the start of the chunk
                 contents = f.read(end - start)          # read chunks
-                if i < self.num_cores - 1:
+                if i < num_cores - 1:
                     contents += f.readline()            # read residue of the last line
 
                 chunks.append(contents.decode(self.encoding or 'utf-8')) # decode byte buffer to text
@@ -81,14 +84,32 @@ class Parser:
 
         Args:
             chunk(str) : part of file contents
+
+        Return:
+            result(list[str]]) : matched sentence
         """
         result:list[str] = []
 
         # Scan the entire chunk once with a err_regex, show match all at once
+        # see repr() to confirm what escape character is included
         matcher: Iterator[re.Match[str]] = self.pattern.finditer(chunk)
+        i = 0
         for match in matcher:
+
             msg = match.group().rstrip('\n') # remove \n at end of line
             msg = msg.replace('\n', '') # remove \n in the middle of message to make multi line to one line
+
+            if match.lastgroup and match.lastgroup.startswith('error'):
+                i+=1
+            elif match.lastgroup and match.lastgroup.startswith('line'):
+                for n in range(i):
+                    if result[-1-n].startswith('!'):
+                        result[-1-n] = result[-1-n][:2] + msg + result[-1-n][1:]
+                i = 0
+                continue
+            else: # warn
+                pass
+
             result.append(msg)
             # group(0) : all word of matched with pattern that includes out of () (default)
             # group(1) : only included word in () at first time, next is group(2)

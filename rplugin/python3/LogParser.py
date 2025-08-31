@@ -24,10 +24,12 @@ def main():
     # (?=a) not includes a
     # add \.(?:\n|$) to detect multiline message
     patterns = {
-        "error": r'^([^\n]*\.tex:\d+:.*?)\.(?:\n|$)', # test2.tex:42: LaTeX Error: Can be used only in preamble.
-        "warn_latex": r'^(LaTeX Warning:.*?)\.(?:\n|$)', # LaTeX Warning: There were undefined references.
-        "warn_over": r'^(Overfull|Underfull)(.*?)(?=\[)', # 'overfull|underfull' to before [  (group(0) needs)
-        "warn_pkg": r'^(Package \w+ Warning:.*?)\.(?:\n|$)',
+        "error1": r'^(?P<error1>[^\n]*\.tex:\d+:.*?)\.(?:\n|$)',       # test2.tex:42: LaTeX Error: ~
+        "error2": r'^! (?P<error2>.*?)\.(?:\n|$)',                     # ! LaTeX Error: ~
+        "line": r'^l\.(?P<line>\d+)\b',                                # l.21 ~
+        "warn_latex": r'^(?P<warn_latex>LaTeX Warning:.*?)\.(?:\n|$)', # LaTeX Warning: There were undefined references.
+        "warn_over": r'^(Overfull|Underfull)(?P<warn_over>.*?)(?=\[)', # 'overfull|underfull' to before ~ 59--60
+        "warn_pkg": r'^(?P<warn_pkg>Package \w+ Warning:.*?)\.(?:\n|$)',
     }
 
     combined_patterns = r'|'.join(f"{pattern}" for pattern in patterns.values()) # combine patterns to string with '|',

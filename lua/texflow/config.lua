@@ -20,8 +20,6 @@ local default_config = {
 			'-pdf',
 			'-interaction=nonstopmode',
 			'-synctex=1',
-			'-verbose',
-			'-file-line-error',
 			'@tex',
 		},
 		openAfter = false,
