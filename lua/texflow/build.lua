@@ -57,7 +57,7 @@ local function set_autocmd(type, file)
 	if type == 'viewer' and not job_id.viewer then
 		-- stop local function
 		local function stop_viewer()
-			vim.fn.jobstop(job_id.viewer)
+			pcall(vim.fn.jobstop, job_id.viewer)
 			job_id.viewer = nil
 		end
 
