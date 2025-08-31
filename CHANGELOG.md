@@ -6,6 +6,7 @@
 - Add error pattern starts with `!` [d8f399e](https://github.com/Jaehaks/texflow.nvim/commit/d8f399e07013b69f75451b0f964557dfb27adaed)
 	- now `-file-line-error` of `latexmk` doesn't be necessary option.
 	- Some errors are not converted to format of `<filename>:<line>:<msg>` with `-file-line-error`
+- Fix bug that invoke error when *.tex buffer is deleted after viewer is closed first. [478f092](https://github.com/Jaehaks/texflow.nvim/commit/478f092fa81c698b95820e589d9be5ea175c5cd9)
 
 ## 2025-08-30
 
