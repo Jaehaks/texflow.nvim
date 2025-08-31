@@ -1,5 +1,12 @@
 # ChnageLog
 
+## 2025-09-01
+
+### Bug fixed
+- Add error pattern starts with `!` [d8f399e](https://github.com/Jaehaks/texflow.nvim/commit/d8f399e07013b69f75451b0f964557dfb27adaed)
+	- now `-file-line-error` of `latexmk` doesn't be necessary option.
+	- Some errors are not converted to format of `<filename>:<line>:<msg>` with `-file-line-error`
+
 ## 2025-08-30
 
 ### Bug fixed

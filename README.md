@@ -48,7 +48,7 @@ This is why I am editing it.
 
 - [Neovim v0.11.0+](https://github.com/neovim/neovim/releases)
 - [fidget.nvim](https://github.com/j-hui/fidget.nvim) : (optional) To notify process messages.
-- [texlab](https://github.com/latex-lsp/texlab) : (optional) To highlight grammar and use diagnostics.
+- [texlab](https://github.com/latex-lsp/texlab) : (optional) To highlight grammar and use diagnostics which `texflow.nvim` cannot detect.
 - `latex engine` : (required) To compile latex, I prefer `latexmk` from [MikTex](https://miktex.org/).
 - `viewer engine` : (required) To forward/inverse search, I prefer [sioyek](https://github.com/ahrm/sioyek).
 - `python3` : (required) To forward/inverse search
@@ -137,8 +137,6 @@ require('texflow').setup({
       '-pdf',
       '-interaction=nonstopmode',
       '-synctex=1',
-      '-verbose',
-      '-file-line-error',
       '@tex',
     },
 	openAfter = false,	-- open viewer after compile automatically
@@ -239,7 +237,6 @@ opts = {
       '-outdir=@texname',
       '-interaction=nonstopmode',
       '-synctex=1',
-	  '-file-line-error',
       '@tex',
     },
 	openAfter = true,
@@ -298,6 +295,8 @@ require('texflow').compile({
 require('texflow').compile()
 ```
 
+> [!NOTE]
+> `latexmk` will install packages which is called in `\usepackages` automatically if the packages is not installed
 
 
 ### `Compile:Diagnostics`
@@ -308,7 +307,8 @@ require('texflow').compile()
 `Texflow.nvim` supports showing diagnostics in statuscolumn like lsp. \
 These diagnostics are from `*.log` file after `*.tex` file is compiled. `Texflow.nvim` parses the error messages
 and show at proper line number which is related with error or warning. \
-You must includes `--file-line-error` argument in your latex engine configuration to parse error.
+It detects error format starts with both `!` and `<filename>:<line>`,
+You doesn't need to include `--file-line-error` argument necessarily in your latex engine configuration.
 
 <u>There are some limitations to show diagnostics.</u>
 1) All error/warning in log file doesn't mentioned column number. All diagnostics from `Texflow` will show at column 0.
