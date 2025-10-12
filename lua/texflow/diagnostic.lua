@@ -61,19 +61,22 @@ local function add_diagnostic(file, data)
 			mtype = vim.diagnostic.severity.WARN
 		end
 
-		local item = {
-			lnum = lnum and tonumber(lnum)-1 or 0,
-			col = col or 0,
-			severity = mtype,
-			message = msg,
-			source = ns_name,
-			namespace = ns_id,
-		}
-		-- remove duplicated item
-		local key = vim.inspect(item)
-		if not hashes[key] then
-			hashes[key] = true
-			table.insert(diagnostics, item)
+		if msg then
+			local item = {
+				lnum = lnum and tonumber(lnum)-1 or 0,
+				col = col or 0,
+				severity = mtype,
+				message = msg,
+				source = ns_name,
+				namespace = ns_id,
+			}
+
+			-- remove duplicated item
+			local key = vim.inspect(item)
+			if not hashes[key] then
+				hashes[key] = true
+				table.insert(diagnostics, item)
+			end
 		end
 	end
 
