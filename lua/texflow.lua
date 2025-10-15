@@ -7,17 +7,8 @@ M.setup = function(opts)
 end
 
 -- // Proxy pattern
-
--- require('texflow').config.<function>
-M.config = setmetatable({}, {
-	__index = function(_, k)
-		return require('texflow.config')[k]
-	end
-})
-
--- require('texflow').<function>
 return setmetatable(M, {
 	__index = function(_, k)
-		return require('texflow.build')[k]
+		return require('texflow.commands')[k]
 	end
 })

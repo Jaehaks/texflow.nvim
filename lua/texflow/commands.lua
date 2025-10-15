@@ -1,16 +1,20 @@
 local M = {}
+local Build = require('texflow.build')
+local Config = require('texflow.config')
 
-M.setup_commands = function()
-  -- vim.keymap.set("n", "<leader>ll", function()
-  --   local config = require("mylatex.config").get()
-  --   local run = require("mylatex.run")
-  --   local file = vim.fn.expand("%:p")
-  --   if file:match("%.tex$") then
-  --     run.compile_and_view(file, config)
-  --   else
-  --     vim.notify("TeX 파일이 아닙니다.")
-  --   end
-  -- end, { desc = "LaTeX 컴파일 & 뷰어" })
+---@return texflow.config
+M.get_config = function()
+	return Config.get()
+end
+
+---@param opts texflow.config
+M.compile = function(opts)
+	Build.compile(opts)
+end
+
+---@param opts texflow.config
+M.view = function(opts)
+	Build.view(opts)
 end
 
 return M
