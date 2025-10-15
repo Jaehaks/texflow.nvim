@@ -95,6 +95,14 @@ local function valid_check(type, file, opts)
 		return true
 	end
 
+	if type == 'viewer' then
+		if file.pdffile == '' then
+			vim.notify('TexFlow : Cannot detect pdf file', vim.log.levels.ERROR)
+			valid[type].execute = false
+			return false
+		end
+	end
+
 	-- check current file is valid tex
 	if not Utils.is_tex(file) then
 		vim.notify('TexFlow : Execute command on *.tex file only', vim.log.levels.ERROR)
