@@ -21,14 +21,21 @@ M.sep_unify = sep_unify
 ---@param dir string directory path without '/' at tail.  '.' means current path
 ---@param file string filename which you want to find <filename.ext> format
 local function get_filepath(dir, file)
+	-- find files in dir with depth 1 first,
+	local pattern = sep_unify(dir .. '/' .. file)
+	local files = vim.fn.glob(pattern, false, true)
+	if #files > 0 then
+		return files[1]
+	end
+	-- find files in dir after depth 2
 	-- find files without suffix option / and return all matched files with list
 	-- the depth will limited by 2
-	local pattern = sep_unify(dir .. '/**/' .. file)
-	local files = vim.fn.glob(pattern, false, true)
-	if #files == 0 then
-		return ''
+	pattern = sep_unify(dir .. '/**/' .. file)
+	files = vim.fn.glob(pattern, false, true)
+	if #files > 0 then
+		return files[1]
 	end
-	return files[1]
+	return ''
 end
 
 -- get root of this plugin
