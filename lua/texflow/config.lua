@@ -20,6 +20,7 @@ local default_config = {
 			'-pdf',
 			'-interaction=nonstopmode',
 			'-synctex=1',
+			'-silent', -- small stdout of compile
 			'@tex',
 		},
 		openAfter = false,

@@ -170,27 +170,39 @@ local function compile_core(file, opts)
 
 	-- show progress message
 	local progress
+	local progress_title = 'compiling ' .. vim.fn.expand('%:t')
 	if fidget_avail then
 		progress = fidget.progress.handle.create({
-			title = 'compiling with ' .. opts.latex.engine .. '...',
-			message = vim.fn.expand('%'),
-			lsp_client = { name = 'texflow.nvim' }
+			message = 'start with' .. opts.latex.engine,
+			title = progress_title,
+			lsp_client = { name = 'texflow.nvim' },
 		})
 	else
-		vim.notify('"' .. vim.fn.expand('%') .. '" compiling with ' .. opts.latex.engine .. '...', vim.log.levels.INFO)
+		vim.notify(progress_title .. ' : ' .. 'start with ' .. opts.latex.engine .. '...', vim.log.levels.INFO)
 	end
 
 	-- compile start
 	job_id.compile = vim.fn.jobstart(cmd, {
 		cwd = file.filepath,
-		stdout_buffered = true, -- output will be transferred at once when job complete
+		stdout_buffered = false, -- output will be transferred every stdout
+		on_stdout = function(_, data, _)
+			if type(data) == 'string' then data = {data} end
+			-- limit to too long string to 30 characters
+			if #data[1] > 30 then data[1] = string.sub(data[1], 1, 30) .. '...' end
+			-- show progress
+			if fidget_avail then
+				progress:report({ message = data[1] })
+			else
+				vim.notify(progress_title .. ' : ' .. data[1], vim.log.levels.INFO)
+			end
+		end,
 		on_exit = function(_, code, _)
 			if code == 0 then
 				if fidget_avail then
-					progress:report({ title = 'compile completed!', done = true, })
+					progress:report({ message = 'compile completed!' })
 					progress:finish()
 				else
-					vim.notify('compile completed!', vim.log.levels.INFO)
+					vim.notify(progress_title .. ' : ' .. 'compile completed!', vim.log.levels.INFO)
 				end
 
 				-- open viewer after compile
@@ -213,10 +225,10 @@ local function compile_core(file, opts)
 				end
 			else
 				if fidget_avail then
-					progress:report({ title = 'compile ERROR(' .. code .. ')', done = true, })
+					progress:report({ message = 'compile ERROR(' .. code .. ')', done = true })
 					progress:finish()
 				else
-					vim.notify('compile failed! (' .. code .. ')', vim.log.levels.ERROR)
+					vim.notify(progress_title .. ' : ' ..'compile failed! (' .. code .. ')', vim.log.levels.ERROR)
 				end
 
 			end
