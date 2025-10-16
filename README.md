@@ -64,11 +64,14 @@ It may not work well in UNIX environments because it needs to deal error managem
 
 # Installation
 
-Set `XDG_DATA_HOME` environment variable.
-Server file will be created using this variable.
+First, Set `XDG_DATA_HOME` environment variable. \
+Server file which saves servername of opened neovim instance will be created using this variable. \
+If `XDG_DATA_HOME` doesn't be set, `%HOME%/.local/share/nvim-data/texflow/texflow_server.json` will be created. \
+If `XDG_DATA_HOME` is set, `%XDG_DATA_HOME%/nvim-data/texflow/texflow_server.json` will be created in Windows. \
+In Linux, `$XDG_DATA_HOME/nvim/texflow/texflow_server.json` will be created.
 
 
-Install `pynvim` using package manager.
+Second, Install `pynvim` using package manager.
 If you want to use `python` in virtual environment, install `pynvim` in virtual environment.
 And use `python` in virtual environment
 
@@ -76,13 +79,10 @@ And use `python` in virtual environment
 pip install pynvim
 ```
 
-
-
-Set `vim.g.python3_host_prog` to set python provider.
+Third, Set `vim.g.python3_host_prog` in neovim configuration file to set python provider.
 ```lua
 vim.g.python3_host_prog = '<python path>/python'
 ```
-
 
 
 If you are using `lazy.nvim`.
