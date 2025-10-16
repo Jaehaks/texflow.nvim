@@ -140,9 +140,18 @@ require('texflow').setup({
       '-silent',
       '@tex',
     },
-	openAfter = false,	-- open viewer after compile automatically
-						-- If you set forward-search in viewer configuration, forward search is executed
-	onSave = false,		-- compile *.tex automatically after buffer is saved
+    -- It you use 'latexmk', `latexmk -c` is called before tex file is compiled.
+    -- It will remove aux files except of result files like `.bbl, .synctex.gz, .pdf`.
+    -- If you want to remove additional files in result directory, set them in clear_ext.
+    -- If you use other latex engine which doesn't support command to clear aux files,
+    -- you need to write all aux file extensions to remove.
+    clear_ext = {
+        '.bbl',
+        '.synctex.gz',
+    },
+    openAfter = false,	-- open viewer after compile automatically
+                        -- If you set forward-search in viewer configuration, forward search is executed
+    onSave = false,		-- compile *.tex automatically after buffer is saved
   },
   viewer = {
     shell = vim.api.nvim_get_option_value('shell', {scope = 'global'}),
@@ -182,8 +191,19 @@ Default latex engine is `tectonic` but We modified it to match engine which We u
 <br>
 
 ```lua
+local root_dir_texlab = function (bufnr, cb)
+  local root = vim.fs.root(bufnr, {
+    '.latexmkrc',
+    'latexmkrc',
+    '.texlabroot',
+    'texlabroot',
+    '.git'
+  }) or vim.fn.expand('%:p:h')
+  cb(root)
+end
 vim.lsp.config('texlab', {
   cmd = {'texlab'},
+  root_dir = root_dir_texlab,
   filetypes = {'tex', 'plaintex', 'bib'},
   settings = { -- see https://github.com/latex-lsp/texlab/wiki/Configuration
     texlab = {
@@ -196,6 +216,7 @@ vim.lsp.config('texlab', {
         onSave = false,                 -- build on save (it works when :w but not autocmd save)
         forwardSearchAfter = false,     -- perform forward search after build
       },
+	  -- forward / inverse search will be done by texflow.nvim
       latexFormatter = 'latexindent',
       latexindent = {
         modifyLineBreaks = false,
@@ -238,6 +259,7 @@ opts = {
       '-outdir=@texname',
       '-interaction=nonstopmode',
       '-synctex=1',
+	  '-silent',
       '@tex',
     },
 	openAfter = true,
@@ -252,7 +274,14 @@ config = function (_, opts)
     group = TexFlowMaps,
     pattern = {'tex', 'latex', 'plaintex'},
     callback = function ()
-		-- keymap what you want
+      vim.keymap.set('n', '<leader>ll', function () texflow.compile({ latex = { onSave = true, } })
+      end, { buffer = true, desc = '[TexFlow] compile tex file and open pdf', silent = true })
+
+      vim.keymap.set('n', '<leader>lf', function () texflow.compile({ latex = { openAfter = false, onSave = false, } })
+      end, { buffer = true, desc = '[TexFlow] compile tex file and open pdf', silent = true })
+
+      vim.keymap.set('n', '<leader>lv', function () texflow.view() end
+      , { buffer = true, desc = '[TexFlow] view pdf file', silent = true })
     end
   })
 end
@@ -271,34 +300,46 @@ end
 
 # Features / API
 
-## `Compile`
+## `Compile(opts)`
 
 ![texflow_compile_onSave](https://github.com/user-attachments/assets/48afb998-f5c2-440b-ba13-625c7db418db)
 
+You can overwrite configuration to each command. If `opts` is `nil`, it is applied by your configuration by `setup()`. \
+
 
 ```lua
--- You can insert your custom config table as a first argument or leave with '_' if you use your setup.
+-- Compile tex file in current buffer once only
+require('texflow').compile()
+
 -- Compile current buffer once, and open viewer automatically if compile is completed
 require('texflow').compile({
   latex = {
     openAfter = true,
-  })
+  }
+})
 
 -- If onSave is true, compile() does toggle behavior.
 -- It turns on continuous mode after first compilation, then texflow compiles whenever you save file.
--- If you call this function again, It turns off continuous mode without compilation
+-- If you call this function again, It turns off continuous mode without compilation.
 require('texflow').compile({
   latex = {
     openAfter = true,
     onSave = true,
-  })
--- Compile current buffer once only
-require('texflow').compile()
+  }
+})
 ```
 
 > [!NOTE]
-> `latexmk` will install packages which is called in `\usepackages` automatically if the packages is not installed
+> `latexmk` will install packages which is called in `\usepackages` automatically if the packages is not installed.
 
+> [!TIP]
+> Sometimes, errors occur after compile even though tex file grammar is perfect If the previous compile result has error. \
+> To achieve more exact compile process, cleaning up auxiliary files which are created previous compile process is needed.
+>
+> `Texflow.nvim` clean up the aux files in result directory before compile automatically if the previous result has error.
+> You can add file extension list to `clear_ext` field on config manually to remove these files.
+> `latexmk -c` will remains `.bbl`, `.pdf`, `.synctex.gz`. So default value of `clear_ext` is `{.bbl, .synctex.gz}`.
+> If you use other latex engine which doesn't support cleaning command, add all file extensions what you need.
 
 ### `Compile:Diagnostics`
 
