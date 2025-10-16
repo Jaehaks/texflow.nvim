@@ -132,8 +132,8 @@ local function view_core(file, opts)
 	vim.fn.Texflow_save_server_mapping(Utils.sep_unify(file.fullpath, '/'))
 	set_autocmd('viewer', file)
 	local jid = vim.fn.jobstart(cmd, {
-		cwd = file.filepath,
-		detach = false, -- detach = false needs to remove cmd prompt window blinking
+		cwd = file.filepath, -- it is useless because pdf file is absolute path.
+		detach = false,      -- detach = false needs to remove cmd prompt window blinking
 		on_exit = function (_, code, _)
 			if code ~= 0 then
 				local progress_items = {
@@ -187,8 +187,8 @@ local function compile_core(file, opts)
 
 	-- compile start
 	job_id.compile = vim.fn.jobstart(cmd, {
-		cwd = file.filepath,
-		stdout_buffered = false, -- output will be transferred every stdout
+		cwd = file.filepath, 		-- '-outdir' is based by where latexmk was run.
+		stdout_buffered = false, 	-- output will be transferred every stdout
 		on_stdout = function(_, data, _)
 			if type(data) == 'string' then data = {data} end
 			progress_items.msg = data[1]
