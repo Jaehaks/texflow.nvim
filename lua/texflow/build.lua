@@ -16,16 +16,16 @@ local job_id = { -- check job is running
 ---@field viewer texflow.valid.viewer
 local valid = {
 	---@class texflow.valid.latex
-	---@field excute boolean?
-	---@field autocmd boolean?
+	---@field execute boolean
+	---@field autocmd boolean
 	latex = {
 		execute = false,
 		autocmd = false,
 	},
 
 	---@class texflow.valid.viewer
-	---@field excute boolean?
-	---@field autocmd boolean?
+	---@field execute boolean
+	---@field autocmd boolean
 	viewer = {
 		execute = false,
 		autocmd = false,
