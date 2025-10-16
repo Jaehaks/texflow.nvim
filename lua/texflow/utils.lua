@@ -84,7 +84,6 @@ M.replace_cmd_token = function(command)
 	return cmd_t
 end
 
--- get file data
 ---@class texflow.filedata table includes current state of file
 ---@field line number line number under the cursor
 ---@field fullpath string absolute path of the file
@@ -95,6 +94,11 @@ end
 ---@field bufnr number buffer number of the file
 ---@field pdffile string full filepath of pdf file related with tex
 ---@field logfile string full filepath of log file related with tex
+---@field outdir string outdir from latex command
+
+-- get file data
+---@param bufnr number?
+---@return texflow.filedata
 M.get_filedata = function(bufnr)
 	bufnr = bufnr or vim.api.nvim_get_current_buf()
 
