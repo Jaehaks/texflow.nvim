@@ -137,6 +137,7 @@ require('texflow').setup({
       '-pdf',
       '-interaction=nonstopmode',
       '-synctex=1',
+      '-silent',
       '@tex',
     },
 	openAfter = false,	-- open viewer after compile automatically
