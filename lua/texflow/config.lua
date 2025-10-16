@@ -10,6 +10,7 @@ local default_config = {
 	---@field shellcmdflag string shell command arguments (ex, /c /n)
 	---@field engine string compile engine for latex
 	---@field args table arguments for latex engine
+	---@field clear_ext table file extensions which is forced clear before tex file is compiled
 	---@field openAfter boolean open viewer after compile.
 	---@field onSave boolean compile automatically after save
 	latex = {
@@ -20,8 +21,17 @@ local default_config = {
 			'-pdf',
 			'-interaction=nonstopmode',
 			'-synctex=1',
-			'-silent', -- small stdout of compile
+			'-silent', -- small stdout result of compile
 			'@tex',
+		},
+		-- It you use 'latexmk', `latexmk -c` is called before tex file is compiled.
+		-- It will remove aux files except of result files like `.bbl, .synctex.gz, .pdf`.
+		-- If you want to remove additional files in result directory, set them in clear_ext.
+		-- If you use other latex engine which doesn't support command to clear aux files,
+		-- you need to write all aux file extensions to remove.
+		clear_ext = {
+			'.bbl',
+			'.synctex.gz',
 		},
 		openAfter = false,
 		onSave = false,

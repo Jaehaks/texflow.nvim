@@ -10,6 +10,7 @@ local Notify = require('texflow.notify')
 local job_id = { -- check job is running
 	compile = nil,
 	viewer = nil,
+	cleanup = nil,
 }
 
 ---@class texflow.valid check valid condition
@@ -230,7 +231,65 @@ local function compile_core(file, opts)
 	})
 end
 
+-- clear aux files and compile
+---@param file texflow.filedata
+---@param opts texflow.config
+local function compile_safe(file, opts)
+	local cmd = Utils.replace_cmd_token(opts.latex)
+
+	-- clear auxiliary files after compile to ensure accurate compilation results
+	if file.logfile ~= '' and valid['latex'].errored then
+		-- get outdir from latex compile command
+		local cmd_s = table.concat(cmd, ' ')
+		file.outdir = string.match(cmd_s, '%-outdir[%=%s](%S+)')
+		file.outdir = file.outdir and Utils.sep_unify(file.filepath .. '/' .. file.outdir) or file.filepath
+
+		-- set clear command
+		local clear_cmd = {}
+		if opts.latex.engine == 'latexmk' then
+			clear_cmd = {'latexmk', '-c', '-outdir=' .. file.outdir}
+		end
+
+		-- clear aux files ind compile after then
+		if #clear_cmd > 0 then
+
+			local progress_items = {
+				title = 'clean up auxfile',
+				msg = 'start with' .. opts.latex.engine,
+				loglevel = vim.log.levels.INFO,
+			}
+			local progress = Notify.progress_start(progress_items)
+
+			job_id.cleanup = vim.fn.jobstart(clear_cmd, {
+				cwd = file.filepath, -- clear command must be executed where .tex file is.
+				on_stdout = function(_, data, _)
+					if type(data) == 'string' then data = {data} end
+					progress_items.msg = data[1]
+					Notify.progress_report(progress, progress_items)
+				end,
+				on_exit = function ()
+					-- remove additional files by clear_ext
+					for _, ext in ipairs(opts.latex.clear_ext) do
+						local clearfile = Utils.sep_unify(file.outdir .. '/' .. file.filename_only .. ext)
+						vim.fn.delete(clearfile)
+					end
+
+					-- update progress
+					progress_items.msg = 'clean up completed!'
+					Notify.progress_finish(progress, progress_items)
+
+					-- do compile
+					compile_core(file, opts)
+				end
+			})
+		end
+	else
+		compile_core(file, opts)
+	end
+end
+
 -- compile file
+---@param opts texflow.config
 M.compile = function(opts)
 	-- get config
 	opts = vim.tbl_deep_extend('force', Config.get(), opts or {})
@@ -255,7 +314,7 @@ M.compile = function(opts)
 		return
 	end
 
-	compile_core(file, opts)
+	compile_safe(file, opts)
 end
 
 return M
