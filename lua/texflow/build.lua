@@ -2,6 +2,7 @@ local M = {}
 local Utils = require('texflow.utils')
 local Config = require('texflow.config')
 local Diag = require('texflow.diagnostic')
+local Notify = require('texflow.notify')
 
 ---@class texflow.job_id
 ---@field compile number?
@@ -18,9 +19,11 @@ local valid = {
 	---@class texflow.valid.latex
 	---@field execute boolean
 	---@field autocmd boolean
+	---@field errored boolean true if compile has error in previous task
 	latex = {
 		execute = false,
 		autocmd = false,
+		errored	= false,
 	},
 
 	---@class texflow.valid.viewer
@@ -31,10 +34,6 @@ local valid = {
 		autocmd = false,
 	},
 }
-
--- check fidget availability
-local fidget_avail, fidget = pcall(require, 'fidget')
-
 
 
 -- clear job_id flag when the job is alive only
@@ -136,11 +135,12 @@ local function view_core(file, opts)
 		detach = false, -- detach = false needs to remove cmd prompt window blinking
 		on_exit = function (_, code, _)
 			if code ~= 0 then
-				if fidget_avail then
-					fidget.notify('Fail to open viewer(' .. code .. ')', vim.log.levels.ERROR, { ttl = 1 })
-				else
-					vim.notify('[TexFlow] Fail to open viewer(' .. code .. ')', vim.log.levels.ERROR)
-				end
+				local progress_items = {
+					title = 'Opening viewer',
+					msg = 'Fail to open viewer(' .. code .. ')',
+					loglevel = vim.log.levels.ERROR
+				}
+				Notify.progress_notify(progress_items)
 			end
 			job_clear('viewer')
 		end}
@@ -177,17 +177,12 @@ local function compile_core(file, opts)
 	local cmd = Utils.replace_cmd_token(opts.latex)
 
 	-- show progress message
-	local progress
-	local progress_title = 'compiling ' .. vim.fn.expand('%:t')
-	if fidget_avail then
-		progress = fidget.progress.handle.create({
-			message = 'start with' .. opts.latex.engine,
-			title = progress_title,
-			lsp_client = { name = 'texflow.nvim' },
-		})
-	else
-		vim.notify(progress_title .. ' : ' .. 'start with ' .. opts.latex.engine .. '...', vim.log.levels.INFO)
-	end
+	local progress_items = {
+		title = 'compiling ' .. vim.fn.expand('%:t'),
+		msg = 'start with' .. opts.latex.engine,
+		loglevel = vim.log.levels.INFO,
+	}
+	local progress = Notify.progress_start(progress_items)
 
 	-- compile start
 	job_id.compile = vim.fn.jobstart(cmd, {
@@ -195,23 +190,14 @@ local function compile_core(file, opts)
 		stdout_buffered = false, -- output will be transferred every stdout
 		on_stdout = function(_, data, _)
 			if type(data) == 'string' then data = {data} end
-			-- limit to too long string to 30 characters
-			if #data[1] > 30 then data[1] = string.sub(data[1], 1, 30) .. '...' end
-			-- show progress
-			if fidget_avail then
-				progress:report({ message = data[1] })
-			else
-				vim.notify(progress_title .. ' : ' .. data[1], vim.log.levels.INFO)
-			end
+			progress_items.msg = data[1]
+			Notify.progress_report(progress, progress_items)
 		end,
 		on_exit = function(_, code, _)
 			if code == 0 then
-				if fidget_avail then
-					progress:report({ message = 'compile completed!' })
-					progress:finish()
-				else
-					vim.notify(progress_title .. ' : ' .. 'compile completed!', vim.log.levels.INFO)
-				end
+				progress_items.msg = 'compile completed!'
+				Notify.progress_finish(progress, progress_items)
+				valid['latex'].errored = false
 
 				-- open viewer after compile
 				if opts.latex.openAfter then
@@ -232,13 +218,10 @@ local function compile_core(file, opts)
 					vim.notify('TexFlow : compile on save mode ON', vim.log.levels.INFO)
 				end
 			else
-				if fidget_avail then
-					progress:report({ message = 'compile ERROR(' .. code .. ')', done = true })
-					progress:finish()
-				else
-					vim.notify(progress_title .. ' : ' ..'compile failed! (' .. code .. ')', vim.log.levels.ERROR)
-				end
-
+				progress_items.msg = 'compile ERROR(' .. code .. ')'
+				progress_items.loglevel = vim.log.levels.ERROR
+				Notify.progress_finish(progress, progress_items)
+				valid['latex'].errored = true
 			end
 			-- show diagnostics for error
 			Diag.errorCheck(opts)
