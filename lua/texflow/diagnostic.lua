@@ -10,10 +10,11 @@ local ns_id = vim.api.nvim_create_namespace(ns_name)
 local captures = {
 	error1      = "^[^:]+:(%d+): (.+)$",
 	error2      = "^!%s+l%.(%d+)%s(.+)$",
-	warn       = "LaTeX Warning:%s+(.*) on input line (%d+)%.",
-	warn_only  = "^LaTeX Warning:%s+[^%d]+%.",
-	over       = "^Overfull.*at lines (%d+)",
-	under      = "^Underfull.*at lines (%d+)",
+	warn        = "LaTeX Warning:%s+(.*) on input line (%d+)%.",
+	warn_only   = "^LaTeX Warning:%s+[^%d]+%.",
+	over        = "^Overfull.*at lines (%d+)",
+	under       = "^Underfull.*at lines (%d+)",
+	warn_other  = "^%w+ warning l%.(%d+) (.+)$",
 }
 
 
@@ -28,12 +29,13 @@ local function add_diagnostic(file, data)
 	-- add item to show diagnostics
 	local diagnostics = {} -- show diagnostics in statuscolumn
 	for _, line in ipairs(data) do
-		local error1    = {line:match(captures.error1)}
-		local error2    = {line:match(captures.error2)}
-		local warn      = {line:match(captures.warn)}
-		local warn_only = {line:match(captures.warn_only)}
-		local over      = {line:match(captures.over)}
-		local under     = {line:match(captures.under)}
+		local error1     = {line:match(captures.error1)}
+		local error2     = {line:match(captures.error2)}
+		local warn       = {line:match(captures.warn)}
+		local warn_only  = {line:match(captures.warn_only)}
+		local warn_other = {line:match(captures.warn_other)}
+		local over       = {line:match(captures.over)}
+		local under      = {line:match(captures.under)}
 
 
 		local lnum, msg = nil, nil
@@ -51,6 +53,9 @@ local function add_diagnostic(file, data)
 			msg = unpack(warn_only)
 			mtype = vim.diagnostic.severity.WARN
 			col = #msg
+		elseif warn_other[1] then -- like pdfTeX warning
+			lnum, msg = unpack(warn_other)
+			mtype = vim.diagnostic.severity.WARN
 		elseif over[1] then
 			msg = line
 			lnum = unpack(over)

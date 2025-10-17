@@ -22,14 +22,16 @@ def main():
     # use $ to get all sentence without \n
     # (?:a) includes a
     # (?=a) not includes a
-    # add \.(?:\n|$) to detect multiline message
+    # add \.(?:\n|$) to detect multiline message, It detects dot is the last of sentence.
+    # but some warning like 'pdfTeX warning', doesn't have a dot at end of sentence.
     patterns = {
-        "error1": r'^(?P<error1>[^\n]*\.tex:\d+:.*?)\.(?:\n|$)',       # test2.tex:42: LaTeX Error: ~
-        "error2": r'^! (?P<error2>.*?)\.(?:\n|$)',                     # ! LaTeX Error: ~
-        "line": r'^l\.(?P<line>\d+)\b',                                # l.21 ~
-        "warn_latex": r'^(?P<warn_latex>LaTeX Warning:.*?)\.(?:\n|$)', # LaTeX Warning: There were undefined references.
-        "warn_over": r'^(Overfull|Underfull)(?P<warn_over>.*?)(?=\[)', # 'overfull|underfull' to before ~ 59--60
-        "warn_pkg": r'^(?P<warn_pkg>Package \w+ Warning:.*?)\.(?:\n|$)',
+        "error1": r'^(?P<error1>[^\n]*\.tex:\d+:.*?)\.(?:\n|$)',         # test2.tex:42: LaTeX Error: ~
+        "error2": r'^! (?P<error2>.*?)\.(?:\n|$)',                       # ! LaTeX Error: ~
+        "line": r'^l\.(?P<line>\d+)\b',                                  # l.21 ~
+        "warn_latex": r'^(?P<warn_latex>LaTeX Warning:.*?)\.(?:\n|$)',   # LaTeX Warning: There were undefined references.
+        "warn_over": r'^(Overfull|Underfull)(?P<warn_over>.*?)(?=\[)',   # 'overfull|underfull' to before ~ 59--60
+        "warn_pkg": r'^(?P<warn_pkg>Package \w+ Warning:.*?)\.(?:\n|$)', # Package warning
+        "warn_pdftex": r'^(?P<warn_pdftex>pdfTeX warning.*?)(?=\s{3,})', # pdfTex warning (ext4): ~ end with multiple white spaces
     }
 
     combined_patterns = r'|'.join(f"{pattern}" for pattern in patterns.values()) # combine patterns to string with '|',

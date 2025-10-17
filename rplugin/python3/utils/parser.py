@@ -99,12 +99,15 @@ class Parser:
             msg = match.group().rstrip('\n') # remove \n at end of line
             msg = msg.replace('\n', '') # remove \n in the middle of message to make multi line to one line
 
-            if match.lastgroup and match.lastgroup.startswith('error'):
+            if match.lastgroup and (match.lastgroup.startswith('error')
+                                    or match.lastgroup.startswith('warn_pdftex')):
                 i+=1
             elif match.lastgroup and match.lastgroup.startswith('line'):
                 for n in range(i):
-                    if result[-1-n].startswith('!'):
+                    if result[-1-n].startswith('!'): # ! l.xx ~
                         result[-1-n] = result[-1-n][:2] + msg + result[-1-n][1:]
+                    elif result[-1-n].startswith('pdfTeX warning'): # pdfTex warning l.xx (ext4) ~
+                        result[-1-n] = result[-1-n][:15] + msg + result[-1-n][14:]
                 i = 0
                 continue
             else: # warn
