@@ -1,5 +1,10 @@
 local M = {}
-local has_win32 = vim.fn.has('win32')
+
+-- check OS
+local WinOS = vim.fn.has('win32') == 1
+local function is_WinOS()
+	return WinOS
+end
 
 -- check command is executable
 M.has_command = function(cmd)
@@ -11,7 +16,11 @@ end
 ---@param sep_to string path separator after change
 ---@param sep_from string path separator before change
 local function sep_unify(path, sep_to, sep_from)
-	sep_to = sep_to or (has_win32 and '\\' or '/')
+	local drive = path:match('^([a-zA-Z]):[\\/]')
+	if drive then
+		path = drive:upper() .. path:sub(2)
+	end
+	sep_to = sep_to or (WinOS and '\\' or '/')
 	sep_from = sep_from or ((sep_to == '/') and '\\' or '/')
 	return path:gsub(sep_from, sep_to)
 end
