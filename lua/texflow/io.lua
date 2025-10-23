@@ -1,6 +1,5 @@
 local M = {}
 local Utils = require('texflow.utils')
--- INFO: This file is unused.
 -- We made this file to add current servername to server file.
 -- Python file manage server file also, so it needs to match there form to rewrite server file between python and lua.
 -- lua's vim.json.encode/decode works fine and it is compatible with json file which is made by python's json package
@@ -9,6 +8,11 @@ local Utils = require('texflow.utils')
 -- Python's json package writes contents using json indented format.
 -- so Using python integration with lua, use python implementation instead of this file
 -- but this file is remained to remember what we studied
+
+-- INFO: this file is used again
+-- write server file using python script is too slow (>400ms).
+-- Using python allows lazy-load this plugin to use inverse-searching even though its slow loading property.
+-- So it is used to only startup
 
 
 -- set texflow server file
@@ -52,7 +56,7 @@ end
 
 
 -- add servername of current neovim instance to serverfile
----@param filepath string tex file path which is corresponding with servername
+---@param filepath string alias or tex file path which is corresponding with servername
 M.add_serverdata = function(filepath)
 	local data = load_serverdata()
 
