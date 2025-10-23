@@ -135,9 +135,9 @@ end
 
 
 -- check valid filetype
-M.is_tex = function (file)
+M.is_tex = function ()
 	local ft_allow = {'tex', 'plaintex', 'latex'}
-	if not vim.tbl_contains(ft_allow, file.extension) then
+	if not vim.tbl_contains(ft_allow, vim.bo.filetype) then
 		return false
 	end
 	return true
