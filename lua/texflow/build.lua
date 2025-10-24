@@ -183,9 +183,6 @@ M.view = function (opts)
 	view_core(opts)
 end
 
--- declaration
-local function compile_safe(opts)
-end
 
 -- compile tex file
 ---@param opts texflow.config
@@ -229,7 +226,7 @@ local function compile_core(opts)
 						group = 'TexFlow.Compile',
 						buffer = file.bufnr,
 						callback = function ()
-							compile_safe(opts)
+							compile_core(opts)
 						end,
 					})
 					valid['latex'].autocmd = true
@@ -249,8 +246,7 @@ local function compile_core(opts)
 end
 
 -- clear aux files in `clear_ext` under all subdirectory of rootdir
----@param rootdir string absolute path of root directory
-local function clear_auxfiles(rootdir)
+local function remove_clear_ext()
 	-- check clear_ext has items
 	local opts = Config.get()
 	if #opts.latex.clear_ext == 0 then
@@ -258,76 +254,82 @@ local function clear_auxfiles(rootdir)
 	end
 
 	-- get file list which has clear_ext pattern
+	local filedata = Utils.get_filedata()
 	local patterns = {}
 	for _, ext in ipairs(opts.latex.clear_ext) do
-		table.insert(patterns, rootdir .. '/**/*' .. ext)
+		local dir = ''
+		if vim.tbl_contains({'.pdf', '.dvi', '.ps'}, ext) then
+			dir = filedata.outdir or filedata.compiledir
+		else
+			dir = filedata.auxdir or (filedata.outdir or filedata.compiledir)
+		end
+		table.insert(patterns, dir .. '/**/*' .. ext)
 	end
 	local delete_files = vim.fn.glob(table.concat(patterns, ','), true, true)
 	if #delete_files == 0 then
 		return
 	end
 
+	-- delete files
 	for _, file in ipairs(delete_files) do
 		local ok = Utils.delete_file(file)
 		if ok == -1 then
-			vim.notify(vim.fn.fnamemodify(file, ':t') .. ' cannot be deleted automatically, manual deleteion required', vim.log.levels.WARN)
+			vim.notify(vim.fn.fnamemodify(file, ':t') .. ' cannot be deleted automatically, manual deleteion is required', vim.log.levels.WARN)
 		end
 	end
 end
+
 
 -- clear aux files and compile
 ---@param opts texflow.config
-function compile_safe(opts)
+---@param cb fun(opts: texflow.config)?
+local function cleanup_auxfiles(opts, cb)
 	local file = Utils.get_filedata()
 
-	-- clear auxiliary files after compile to ensure accurate compilation results
-	if file.logfile ~= '' and valid['latex'].errored then
-		-- set clear command
-		local clear_cmd = {}
-		if opts.latex.engine == 'latexmk' then
-			clear_cmd = {'latexmk', '-c'}
-			if file.outdir then
-				table.insert(clear_cmd, '-outdir=' .. file.outdir)
-			end
-			if file.auxdir then
-				table.insert(clear_cmd, '-auxdir=' .. file.auxdir)
-			end
-		end
-
-		-- clear aux files ind compile after then
-		if #clear_cmd > 0 then
-
-			local progress_items = {
-				title = 'clean up auxfile',
-				msg = 'start with' .. opts.latex.engine,
-				loglevel = vim.log.levels.INFO,
-			}
-			local progress = Notify.progress_start(progress_items)
-
-			job_id.cleanup = vim.fn.jobstart(clear_cmd, {
-				cwd = file.compiledir,
-				on_stdout = function(_, data, _)
-					if type(data) == 'string' then data = {data} end
-					progress_items.msg = data[1]
-					Notify.progress_report(progress, progress_items)
-				end,
-				on_exit = function ()
-					-- remove additional files by clear_ext
-					clear_auxfiles(file.rootdir)
-
-					-- update progress
-					progress_items.msg = 'clean up completed!'
-					Notify.progress_finish(progress, progress_items)
-
-					-- do compile
-					compile_core(opts)
-				end
-			})
-		end
-	else
-		compile_core(opts)
+	-- set clear command
+	local clear_cmd = {}
+	if opts.latex.engine == 'latexmk' then
+		clear_cmd = {
+			'latexmk', '-c',
+			file.outdir and ('-outdir=' .. file.outdir) or nil,
+			file.auxdir and ('-auxdir=' .. file.auxdir) or nil,
+		}
 	end
+	if #clear_cmd == 0 then
+		return
+	end
+
+	local progress_items = {
+		title = 'clean up auxfile',
+		msg = 'start with' .. opts.latex.engine,
+		loglevel = vim.log.levels.INFO,
+	}
+	local progress = Notify.progress_start(progress_items)
+
+	-- clear aux files ind compile after then
+	job_id.cleanup = vim.fn.jobstart(clear_cmd, {
+		cwd = file.compiledir,
+		on_stdout = function(_, data, _)
+			if type(data) == 'string' then data = {data} end
+			progress_items.msg = data[1]
+			Notify.progress_report(progress, progress_items)
+		end,
+		on_exit = function ()
+			-- remove additional files by clear_ext
+			remove_clear_ext()
+
+			-- update progress
+			progress_items.msg = 'clean up completed!'
+			Notify.progress_finish(progress, progress_items)
+
+			-- do something after clear
+			if cb then
+				cb(opts)
+			end
+		end
+	})
 end
+M.cleanup_auxfiles = cleanup_auxfiles
 
 
 -- compile file
@@ -357,7 +359,8 @@ M.compile = function(opts)
 		return
 	end
 
-	compile_safe(opts)
+	-- compile
+	compile_core(opts)
 end
 
 return M

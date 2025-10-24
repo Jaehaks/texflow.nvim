@@ -17,5 +17,11 @@ M.view = function(opts)
 	Build.view(opts)
 end
 
+---@param opts texflow.config
+---@param cb fun(opts: texflow.config)?
+M.cleanup_auxfiles = function(opts, cb)
+	Build.cleanup_auxfiles(opts, cb)
+end
+
 return M
 
