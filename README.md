@@ -1,5 +1,5 @@
 # texflow.nvim
-Make Build and search workflow using `texlab` lsp
+Make Build and search workflow with `texlab` lsp
 
 # Why?
 
@@ -34,7 +34,7 @@ This is why I am editing it.
 
 5) Easy Diagnostics display After latex compile error
 
-> [!NOTE] Note:
+> [!NOTE]
 > Development will be continue until I satisfied even though the period is loose.
 
 
@@ -134,6 +134,7 @@ require('texflow').setup({
     shellcmdflag = vim.api.nvim_get_option_value('shellcmdflag', {scope = 'global'}),
     engine = 'latexmk',
     args = {
+	  -- If you use 'outdir' or 'auxdir' in args, don't use @token. use only plain string.
       '-pdf',
       '-interaction=nonstopmode',
       '-synctex=1',
@@ -258,7 +259,7 @@ opts = {
     engine = 'latexmk',
     args = {
       '-pdf',
-      '-outdir=@texname',
+      '-outdir=build',
       '-interaction=nonstopmode',
       '-synctex=1',
 	  '-silent',
