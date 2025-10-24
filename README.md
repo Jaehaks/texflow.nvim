@@ -138,7 +138,7 @@ require('texflow').setup({
       '-interaction=nonstopmode',
       '-synctex=1',
       '-silent',
-      '@tex',
+      '@maintex',
     },
     -- It you use 'latexmk', `latexmk -c` is called before tex file is compiled.
     -- It will remove aux files except of result files like `.bbl, .synctex.gz, .pdf`.
@@ -161,7 +161,7 @@ require('texflow').setup({
       '--reuse-window',
       '--nofocus',
       '--inverse-search "' .. vim.g.python3_host_prog .. ' @InverseSearch %1 %2"',
-      '--forward-search-file @tex',
+      '--forward-search-file @maintex',
       '--forward-search-line @line',
       '@pdf',
     },
@@ -197,7 +197,6 @@ local root_dir_texlab = function (bufnr, cb)
     'latexmkrc',
     '.texlabroot',
     'texlabroot',
-    '.git'
   }) or vim.fn.expand('%:p:h')
   cb(root)
 end
@@ -237,11 +236,14 @@ These @token is supported. They will be replaced with real value before job star
 | @token         | Description                                                        |
 | -------------- | ------------------------------------------------------------------ |
 | @texname       | file name without extension of current tex file                    |
-| @tex           | file name with extension of current tex file                       |
+| @curtex        | file name with extension of current tex file (error it not)        |
+| @maintex       | file name with extension of main tex file in project               |
 | @line          | line number under cursor                                           |
 | @pdf           | file path of pdf file which is corresponding with current tex file |
 | @InverseSearch | file path of python file to inverse-search                         |
 | @servername    | servername of current neovim instance                              |
+
+
 
 <details>
 	<summary> My User configuration </summary>
@@ -260,7 +262,7 @@ opts = {
       '-interaction=nonstopmode',
       '-synctex=1',
 	  '-silent',
-      '@tex',
+      '@maintex',
     },
 	openAfter = true,
   },
@@ -304,7 +306,7 @@ end
 
 ![texflow_compile_onSave](https://github.com/user-attachments/assets/48afb998-f5c2-440b-ba13-625c7db418db)
 
-You can overwrite configuration to each command. If `opts` is `nil`, it is applied by your configuration by `setup()`. \
+You can overwrite configuration to each command. If `opts` is `nil`, it is applied by your configuration by `setup()`.
 
 
 ```lua
@@ -330,7 +332,7 @@ require('texflow').compile({
 ```
 
 > [!NOTE]
-> `latexmk` will install packages which is called in `\usepackages` automatically if the packages is not installed.
+> If you use `MikTeX`, packages which is called in `\usepackages` are installed automatically when compile starts if the packages are not installed.
 
 > [!TIP]
 > Sometimes, errors occur after compile even though tex file grammar is perfect If the previous compile result has error. \
@@ -341,6 +343,37 @@ require('texflow').compile({
 > `latexmk -c` will remains `.bbl`, `.pdf`, `.synctex.gz`. So default value of `clear_ext` is `{.bbl, .synctex.gz}`.
 > If you use other latex engine which doesn't support cleaning command, add all file extensions what you need.
 
+### `Compile:options`
+
+#### **❓ How is the working directory determined during compilation?**
+
+The working directory for the `latex engine`'s execution is influenced by the `@curtex` and `@maintex` tokens
+passed as an argument to `latex.args`.
+
+If you want to compile current tex file which is focused, use `@curtex`.
+It would be useful when you want to <u>compile sub-tex file independently</u>.
+Plugin checks current buffer is *.tex file and output will be created in directory where `@curtex` is.
+
+If you want to compile main tex file in project, use `@maintex`.
+<u>You can call `compile()` or `view()` function regardless of which file is focused</u>.
+So you can run `compile()` for main file directly right after modifying non-tex file like `.bib`.
+`texflow.nvim` checks which is main file from project root automatically.
+
+#### **❓ How to recognize main file?**
+Plugin detects main file through several ways, the sequence are done in the following order: \
+It would be useful If you have multiple sub-tex file in latex project
+
+1) Check `@default_files=(<main filename>)` value is set in `.latexmkrc`
+2) Check `!TEX root = <main filename>` is declared at top of current tex file.
+3) Check `\documentclass{}` is declared in current tex file.
+4) Check `\documentclass{}` is declared in other tex file from the project root
+
+The project root can be determined by this sequence.
+1) Check `rootdir` of `texlab lsp`.
+2) Check current or parent directory has one of `{.latexmkrc, latexmkrc, Tectonic.toml}` recursively.
+3) If not, set directory where current buffer file is.
+
+
 ### `Compile:Diagnostics`
 
 ![texflow_diagnostic](https://github.com/user-attachments/assets/6146979a-b41b-49ee-ac08-20917dbb56d6)
@@ -350,13 +383,33 @@ require('texflow').compile({
 These diagnostics are from `*.log` file after `*.tex` file is compiled. `Texflow.nvim` parses the error messages
 and show at proper line number which is related with error or warning. \
 It detects error format starts with both `!` and `<filename>:<line>`,
-You doesn't need to include `--file-line-error` argument necessarily in your latex engine configuration.
+You don't need to include `--file-line-error` argument necessarily in your latex engine configuration.
 
 <u>There are some limitations to show diagnostics.</u>
-1) All error/warning in log file doesn't mentioned column number. All diagnostics from `Texflow` will show at column 0.
+1) All error/warning in log file doesn't mentioned column number. All diagnostics from `Texflow` will show at column 2.
 2) Not all warning in log file have line number. These warning will be shown at first line of each `*.tex` file.
 
+> [!CAUTION]
+> To achieve proper log parser operation,
+> you need to extend `max_print_line` setting of `MikTeX` or `TexLive` distribution so that log files should not be wrapped.
+> If not, some files which has long directory cannot show diagnostics properly.
+>
+> If you are using `MikTeX`, you don't need to consider it. \
+> `texflow.nvim` will check `max_print_line` is enough high value and set for basic latex engines
+> such as `pdflatex.ini`, `xelatex.ini`, `lualatex.ini`, `latex.ini`
+> `--max-print-line` option of latex engine works also, but It doesn't work in `lualatex`.
+> So setting `max_print_line` is more reliable solution.
+>
+> If you are using `TexLive`, you can use `texmf.cnf`. \
+> You need to set `max_print_line` to high value (>5000) in `texmf.cnf` manually.
 
+
+#### 💡 Diagnostics on project
+
+Diagnostics of sub files are supported. \
+When you have multiple sub-files used in main file and there are some errors or warning for each files,
+Diagnostics of each files will be displayed according to each files which is loaded in neovim.
+Diagnostics are automatically displayed when you open the file, even if it was not loaded at compile time.
 
 
 ## `Forward-Search`
@@ -417,7 +470,7 @@ For example, for `sioyek`, you can add this configuration in `setup()` (It is de
     '--reuse-window',
     '--nofocus',
     '--inverse-search "python @InverseSearch %1 %2"',
-    '--forward-search-file @tex',
+    '--forward-search-file @maintex',
     '--forward-search-line @line',
     '@pdf',
   },
@@ -460,7 +513,7 @@ args = {
   '--reuse-window',
   '--nofocus',
   '--inverse-search "' .. vim.g.python3_host_prog .. ' @InverseSearch %1 %2"',
-  '--forward-search-file @tex',
+  '--forward-search-file @maintex',
   '--forward-search-line @line',
   '@pdf',
 },

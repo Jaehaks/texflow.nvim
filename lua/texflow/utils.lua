@@ -61,16 +61,227 @@ local function get_plugin_root()
 	return plugin_root
 end
 
+local cand_rcfiles = {'.latexmkrc', 'latexmkrc', 'Tectonic.toml'}
+-- get root directory of this project
+---@param bufnr integer buffer number
+---@return string root directory
+local function get_rootdir(bufnr)
+	---@return vim.lsp.Client[]
+	local clients = vim.lsp.get_clients({bufnr = bufnr, name = 'texlab'}) -- check lsp is attached
+	local root = nil
+	if not vim.tbl_isempty(clients) then
+		root = clients[1].config.root_dir
+	else
+		root = vim.fs.root(bufnr, cand_rcfiles)
+	end
+	root = root or vim.fn.expand('%:p:h')
+	return sep_unify(root)
+end
+
+
+-- check the argument path is absolute path
+---@param path string
+---@return boolean
+local function is_AbsolutePath(path)
+	if is_WinOS() then
+		return path:match('^[%w]:[\\/]') ~= nil
+	else
+		return path:match('^/') ~= nil
+	end
+end
+M.is_AbsolutePath = is_AbsolutePath
+
+-- check the file is readable
+---@param filepath string
+---@return boolean
+local function is_filereadable(filepath)
+	return vim.fn.filereadable(filepath) == 1
+end
+M.is_filereadable = is_filereadable
+
+-- delete file if it is existed
+---@param filepath string
+---@return number 0:success, 1:failed, 2:not existed
+M.delete_file = function (filepath)
+	if is_filereadable(filepath) then
+		return vim.fn.delete(filepath)
+	end
+	return -2
+end
+
+-- search whether magic comment like '% !TEX root = main.tex' exists in current file
+---@return string? absolute path of main file
+local function search_main_in_magic_comment()
+	local lines = vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] -- check first line in current buffer
+	local file = lines:match('^%%%s*!%s*[Tt][Ee][Xx]%s+[Rr][Oo][Oo][Tt]%s*%=%s*(.+)$')
+	if file then
+		file = vim.fn.trim(file) -- remove white space of both side
+		local mainfile = ''
+		if is_AbsolutePath(file) then
+			mainfile = file
+		else -- get absolute path from relative path based on current buffer location
+			-- '!TEX root' recognizes the main file which is relative path is based on the sub-file.
+			local curdir = vim.fn.expand('%:p:h')
+			mainfile = vim.fn.fnamemodify(curdir .. '/' .. file, ':p')
+		end
+
+		-- check the file is real.
+		if is_filereadable(mainfile) then
+			return sep_unify(mainfile)
+		else
+			vim.notify('ERROR : main file ' .. file .. ' cannot be found using !TEX comment ', vim.log.levels.ERROR)
+			return ''
+		end
+	end
+	return nil
+end
+
+-- get line content which pattern is matched with from file.
+---@param filepath string absolute path of file
+---@param patterns string|table pattern to find in file, it can allow 1 capture
+---@return string? line which is matched whit pattern
+local function search_pattern_in_file(filepath, patterns)
+	-- read file contents
+	local ok, lines = pcall(vim.fn.readfile, filepath)
+	if not ok then
+		return nil
+	end
+	local contents = table.concat(lines, '\n')
+
+	-- find line that matches pattern in file
+	if type(patterns) == 'string' then
+		patterns = {patterns}
+	end
+	for _, pattern in ipairs(patterns) do
+		local matched = contents:match(pattern)
+		if matched then
+			return matched
+		end
+	end
+	return nil
+end
+
+---@param rootdir string root directory of latex project
+---@param opts texflow.config
+---@return string? main file list
+local function search_main_in_rc(rootdir, opts)
+	-- check main file is set in rcfile
+	---@param filename string rcfile name
+	---@param patterns table pattern to get main file in rcfile, it needs to include (.+) to capture the main file name only.
+	local function is_mainfile(filename, patterns)
+		local rcfile = sep_unify(rootdir .. '/' .. filename)
+		if is_filereadable(rcfile) then
+			local matched = search_pattern_in_file(rcfile, patterns)
+			if matched then
+				local mainfiles = vim.split(matched, ',', {plain = true, trimempty = true})
+				-- viewer will has option like 'use this window' to implement forward search.
+				-- If there are multiple independent files to compile and open viewer,
+				-- the later viewer will opens by covering previous one. It is confused.
+				-- So It is  better to limit the number of main file to 1.
+				if #mainfiles > 1 then
+					vim.notify('ERROR : More than 2 main files are set in ' .. filename .. '. reduce to 1', vim.log.levels.ERROR)
+					return ''
+				end
+				local mainfile = mainfiles[1]
+				mainfile = vim.fn.trim(mainfile) -- remove whitespace
+				mainfile = mainfile:gsub('"', ''):gsub("'", "") -- remove quotes
+				mainfile = vim.fn.fnamemodify(mainfile, ':t') -- get file name only
+				local mainfilepath = vim.fs.find(mainfile, { path = rootdir, type = 'file', limit = 1, })[1] -- get full path
+				mainfilepath = sep_unify(mainfilepath)
+
+				if is_filereadable(mainfilepath) then
+					return mainfilepath
+				else
+					vim.notify('ERROR : main file ' .. mainfile .. ' cannot be found using !TEX comment ', vim.log.levels.ERROR)
+					return ''
+				end
+			end
+		end
+		return nil
+	end
+
+	if opts.latex.engine == 'latexmk' then
+		for _, filename in ipairs({'.latexmkrc', 'latexmkrc'}) do
+			local mainfile = is_mainfile(filename, {
+				"^@default_files%s*%=%s*%((.+)%)%s*;",  -- @default_files = ('main.tex')
+			})
+			if mainfile then return mainfile end
+		end
+	elseif opts.latex.engine == 'tectonic' then
+		for _, filename in ipairs({'Tectonic.toml'}) do
+			local mainfiles = is_mainfile(filename, {
+				"^@inputs%s*%=%s*%[(.+)%]",  -- inputs = ['main.tex'], must use one line format.
+			})
+			if mainfiles then return mainfiles end
+		end
+	end
+	return nil
+end
+
+---@param rootdir string
+---@return string? main file list
+local function search_documentclass(rootdir)
+	-- find \documentclass in current file
+	local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+	local contents = table.concat(lines, '\n')
+	local matched = contents:match('\\documentclass')
+	if matched then
+		return sep_unify(vim.api.nvim_buf_get_name(0))
+	end
+
+	-- find \documentclass for other files in rootdir
+	local tex_files = vim.fn.glob(rootdir .. '/**/*.tex', false, true) -- get all .tex file and output to table
+	for _, file in ipairs(tex_files) do
+		local content = table.concat(vim.fn.readfile(file, '', 100), '\n') -- get 100 lines at top
+		if content:match('\\documentclass') then
+			return sep_unify(file)
+		end
+	end
+
+	return nil
+end
+
+-- get main files
+---@param rootdir string absolute path of project root
+---@param opts texflow.config
+---@return string? absolute path of main tex file
+local function get_mainfile(rootdir, opts)
+
+	-- 1) latexmkrc takes precedence over '!TEX root'
+	-- 2) If there are no any comment about main file, It detects using documentclass
+
+	local mainfile = search_main_in_rc(rootdir, opts)     -- First, check rcfile
+	if mainfile == '' then -- if it has error, quit searching main file
+		return nil
+	elseif mainfile then
+		return mainfile
+	end
+
+	mainfile = search_main_in_magic_comment() -- Second, check !TEX comment
+	if mainfile == '' then
+		return nil
+	elseif mainfile then
+		return mainfile
+	end
+
+	mainfile = search_documentclass(rootdir)  -- Third, check \documentclass
+	if mainfile == '' then
+		return nil
+	elseif mainfile then
+		return mainfile
+	end
+
+	return nil
+end
+M.get_mainfile = get_mainfile
+
 -- replace @ token from command table
----@param command table config.<command>
+---@param command table config.<type>
 M.replace_cmd_token = function(command)
 	local sep = ':::::' -- separator between command table component
-	local file = M.get_filedata(0)
+	local file = M.get_filedata()
 	local cmd_t = vim.list_extend({command.shell, command.shellcmdflag, command.engine}, command.args)
 	local cmd_s = table.concat(cmd_t, sep)
-
-	-- @pdf
-	local pdfpath = file.pdffile
 
 	-- @InverseSearch
 	local inverseSearchPath = get_plugin_root() .. '/rplugin/python3/InverseSearch.py'
@@ -82,9 +293,10 @@ M.replace_cmd_token = function(command)
 
 	-- replace token
 	cmd_s = cmd_s:gsub('(@texname)', file.filename_only)
-				 :gsub('(@tex)', file.filename)
+				 :gsub('(@curtex)', file.filename)
+				 :gsub('(@maintex)', file.mainname)
 				 :gsub('(@line)', file.line)
-				 :gsub('(@pdf)', pdfpath)
+				 :gsub('(@pdf)', file.pdffile)
 				 :gsub('(@InverseSearch)', inverseSearchPath)
 				 :gsub('(@LogParser)', LogParserPath)
 				 :gsub('(@servername)', vim.v.servername)
@@ -95,42 +307,96 @@ end
 
 ---@class texflow.filedata table includes current state of file
 ---@field line number line number under the cursor
----@field fullpath string absolute path of the file
----@field filepath string absolute path of parent directory of the file
----@field filename string filename with extension
----@field filename_only string filename without extension
----@field extension string extension of the file
----@field bufnr number buffer number of the file
+---@field rootdir string absolute path of project root
+---@field filepath string absolute path of current file
+---@field filedir string absolute path of parent directory of current file
+---@field filename string current filename with extension
+---@field filename_only string current filename without extension
+---@field fileext string extension of current file
+---@field mainpath string absolute path of main tex file
+---@field maindir string absolute path of directory where main tex file is.
+---@field mainname string filename with extension of main tex file.
+---@field mainname_only string filename without extension of main tex file.
+---@field compiledir string absolute path where compile is executed
+---@field bufnr number buffer number of current file
 ---@field pdffile string full filepath of pdf file related with tex
 ---@field logfile string full filepath of log file related with tex
 ---@field outdir string outdir from latex command
+---@field auxdir string auxdir from latex command
+local filedata = {}
 
 -- get file data
 ---@param bufnr number?
----@return texflow.filedata
-M.get_filedata = function(bufnr)
+---@param opts texflow.config
+M.update_filedata = function(bufnr, opts)
+	filedata = {}
 	bufnr = bufnr or vim.api.nvim_get_current_buf()
 
-	local line          = vim.api.nvim_win_get_cursor(0)[1] -- get cursor of current window
-	local fullpath      = vim.api.nvim_buf_get_name(bufnr)
-	local filepath      = vim.fn.fnamemodify(fullpath, ':h')
-	local filename      = vim.fn.fnamemodify(fullpath, ':t')
-	local filename_only = vim.fn.fnamemodify(filename, ':r')
-	local extension     = vim.fn.fnamemodify(filename, ':e')
-	local pdffile 		= get_filepath(filepath, filename_only .. '.pdf')
-	local logfile 		= get_filepath(filepath, filename_only .. '.log')
+	local rootdir = get_rootdir(0)
 
-	return {
+	local line          = vim.api.nvim_win_get_cursor(0)[1] -- get cursor of current window
+	local filepath      = vim.api.nvim_buf_get_name(bufnr)
+	local filedir       = vim.fn.fnamemodify(filepath, ':h')
+	local filename      = vim.fn.fnamemodify(filepath, ':t')
+	local filename_only = vim.fn.fnamemodify(filename, ':r')
+	local fileext       = vim.fn.fnamemodify(filename, ':e')
+
+	local mainpath 		= get_mainfile(rootdir, opts)
+	if not mainpath then
+		vim.notify('ERROR : main tex file cannot be detected!')
+		return
+	end
+	local maindir       = vim.fn.fnamemodify(mainpath, ':h')
+	local mainname      = vim.fn.fnamemodify(mainpath, ':t')
+	local mainname_only = vim.fn.fnamemodify(mainname, ':r')
+
+	-- get outdir/auxdir from latex command args
+	-- WARNING: Don't use @token in `-outdir` or `-auxdir`
+	local outdir, auxdir = nil, nil
+	local compilename_only, compiledir = nil, nil
+	for _, arg in ipairs(opts.latex.args) do
+		outdir = outdir or string.match(arg, '^%-outdir%s*=?%s*(.*)')
+		auxdir = auxdir or string.match(arg, '^%-auxdir%s*=?%s*(.*)')
+		compiledir = compiledir or (string.match(arg,'@curtex') and filedir) or (string.match(arg,'@maintex') and maindir)
+		compilename_only = compilename_only or (string.match(arg,'@curtex') and filename_only) or (string.match(arg,'@maintex') and mainname_only)
+		if string.match(arg, '@curtex') and fileext ~= 'tex' then
+			vim.notify('ERROR : current file is not *.tex file')
+			return
+		end
+	end
+	outdir = outdir and (compiledir .. '/' .. outdir)
+	auxdir = auxdir and (compiledir .. '/' .. auxdir)
+	outdir = outdir and sep_unify(outdir)
+	auxdir = auxdir and sep_unify(auxdir)
+
+	-- get output file path
+	local pdffile = sep_unify((outdir or compiledir) .. '/' .. compilename_only .. '.pdf')
+	local logfile = sep_unify((auxdir or (outdir or compiledir)) .. '/' .. compilename_only .. '.log')
+
+	filedata = {
 		line          = line,
-		fullpath      = fullpath,
+		rootdir       = rootdir,
 		filepath      = filepath,
+		filedir       = filedir,
 		filename      = filename,
 		filename_only = filename_only,
-		extension     = extension,
+		fileext       = fileext,
+		mainpath      = mainpath,
+		maindir       = maindir,
+		mainname      = mainname,
+		mainname_only = mainname_only,
+		compiledir 	  = compiledir,
 		bufnr         = bufnr,
-		pdffile 	  = pdffile,
-		logfile 	  = logfile,
+		pdffile       = pdffile,
+		logfile       = logfile,
+		outdir        = outdir,
+		auxdir        = auxdir,
 	}
+end
+
+---@return texflow.filedata
+M.get_filedata = function ()
+	return filedata
 end
 
 

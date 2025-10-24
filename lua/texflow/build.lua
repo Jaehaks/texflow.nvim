@@ -3,6 +3,7 @@ local Utils = require('texflow.utils')
 local Config = require('texflow.config')
 local Diag = require('texflow.diagnostic')
 local Notify = require('texflow.notify')
+local Check = require('texflow.check')
 
 ---@class texflow.job_id
 ---@field compile number?
@@ -80,9 +81,8 @@ end
 
 -- check valid condition
 ---@param type string field name of texflow.valid
----@param file texflow.filedata
 ---@param opts texflow.config
-local function valid_check(type, file, opts)
+local function valid_check(type, opts)
 	-- check job is running
 	if type == 'latex' then
 		if job_id.compile then
@@ -95,6 +95,17 @@ local function valid_check(type, file, opts)
 		return true
 	end
 
+
+	-- check main file is existed.
+	-- so you don't need to execute compile while .tex file is focusing. you can do it everywhere in rootdir
+	local file = Utils.get_filedata()
+	if vim.tbl_isempty(file) then
+		vim.notify('TexFlow : filedata cannot be resolved', vim.log.levels.ERROR)
+		valid[type].execute = false
+		return false
+	end
+
+	-- check pdf file is existed.
 	if type == 'viewer' then
 		if file.pdffile == '' then
 			vim.notify('TexFlow : Cannot detect pdf file', vim.log.levels.ERROR)
@@ -103,12 +114,12 @@ local function valid_check(type, file, opts)
 		end
 	end
 
-	-- check current file is valid tex
-	if not Utils.is_tex(file) then
-		vim.notify('TexFlow : Execute command on *.tex file only', vim.log.levels.ERROR)
-		valid[type].execute = false
-		return valid[type].execute
-	end
+	-- -- check current file is valid tex
+	-- if not Utils.is_tex(file) then
+	-- 	vim.notify('TexFlow : Execute command on *.tex file only', vim.log.levels.ERROR)
+	-- 	valid[type].execute = false
+	-- 	return valid[type].execute
+	-- end
 
 	-- check latex engine
 	if not Utils.has_command(opts[type].engine) then
@@ -117,22 +128,24 @@ local function valid_check(type, file, opts)
 		return valid[type].execute
 	end
 
+	-- check max_print_line was set in *.ini file.
+	Check.check_max_print_line()
+
 	valid[type].execute = true
 	return valid[type].execute
 end
 
 -- open viewer
----@param file texflow.filedata
 ---@param opts texflow.config
-local function view_core(file, opts)
+local function view_core(opts)
 	-- get command with @token is replaced
 	local cmd = Utils.replace_cmd_token(opts.viewer)
+	local file = Utils.get_filedata()
 
 	-- show viewer start
-	vim.fn.Texflow_save_server_mapping(Utils.sep_unify(file.fullpath, '/'))
+	vim.fn.Texflow_save_server_mapping(Utils.sep_unify(file.filepath, '/'))
 	set_autocmd('viewer', file)
 	local jid = vim.fn.jobstart(cmd, {
-		cwd = file.filepath, -- it is useless because pdf file is absolute path.
 		detach = false,      -- detach = false needs to remove cmd prompt window blinking
 		on_exit = function (_, code, _)
 			if code ~= 0 then
@@ -159,23 +172,27 @@ M.view = function (opts)
 	opts = vim.tbl_deep_extend('force', Config.get(), opts or {})
 
 	-- get data of file
-	local file = Utils.get_filedata()
+	Utils.update_filedata(0, opts)
 
 	-- check valid to execute command
-	if not valid_check('viewer', file, opts) then
+	if not valid_check('viewer', opts) then
 		return
 	end
 
 	-- show view
-	view_core(file, opts)
+	view_core(opts)
+end
+
+-- declaration
+local function compile_safe(opts)
 end
 
 -- compile tex file
----@param file texflow.filedata
 ---@param opts texflow.config
-local function compile_core(file, opts)
+local function compile_core(opts)
 	-- get command with @token is replaced
 	local cmd = Utils.replace_cmd_token(opts.latex)
+	local file = Utils.get_filedata()
 
 	-- show progress message
 	local progress_items = {
@@ -187,7 +204,7 @@ local function compile_core(file, opts)
 
 	-- compile start
 	job_id.compile = vim.fn.jobstart(cmd, {
-		cwd = file.filepath, 		-- '-outdir' is based by where latexmk was run.
+		cwd = file.compiledir,
 		stdout_buffered = false, 	-- output will be transferred every stdout
 		on_stdout = function(_, data, _)
 			if type(data) == 'string' then data = {data} end
@@ -202,7 +219,7 @@ local function compile_core(file, opts)
 
 				-- open viewer after compile
 				if opts.latex.openAfter then
-					view_core(file, opts)
+					view_core(opts)
 				end
 
 				-- toggle onSave autocmd
@@ -212,7 +229,7 @@ local function compile_core(file, opts)
 						group = 'TexFlow.Compile',
 						buffer = file.bufnr,
 						callback = function ()
-							compile_core(file, opts)
+							compile_safe(opts)
 						end,
 					})
 					valid['latex'].autocmd = true
@@ -231,23 +248,50 @@ local function compile_core(file, opts)
 	})
 end
 
+-- clear aux files in `clear_ext` under all subdirectory of rootdir
+---@param rootdir string absolute path of root directory
+local function clear_auxfiles(rootdir)
+	-- check clear_ext has items
+	local opts = Config.get()
+	if #opts.latex.clear_ext == 0 then
+		return
+	end
+
+	-- get file list which has clear_ext pattern
+	local patterns = {}
+	for _, ext in ipairs(opts.latex.clear_ext) do
+		table.insert(patterns, rootdir .. '/**/*' .. ext)
+	end
+	local delete_files = vim.fn.glob(table.concat(patterns, ','), true, true)
+	if #delete_files == 0 then
+		return
+	end
+
+	for _, file in ipairs(delete_files) do
+		local ok = Utils.delete_file(file)
+		if ok == -1 then
+			vim.notify(vim.fn.fnamemodify(file, ':t') .. ' cannot be deleted automatically, manual deleteion required', vim.log.levels.WARN)
+		end
+	end
+end
+
 -- clear aux files and compile
----@param file texflow.filedata
 ---@param opts texflow.config
-local function compile_safe(file, opts)
-	local cmd = Utils.replace_cmd_token(opts.latex)
+function compile_safe(opts)
+	local file = Utils.get_filedata()
 
 	-- clear auxiliary files after compile to ensure accurate compilation results
 	if file.logfile ~= '' and valid['latex'].errored then
-		-- get outdir from latex compile command
-		local cmd_s = table.concat(cmd, ' ')
-		file.outdir = string.match(cmd_s, '%-outdir[%=%s](%S+)')
-		file.outdir = file.outdir and Utils.sep_unify(file.filepath .. '/' .. file.outdir) or file.filepath
-
 		-- set clear command
 		local clear_cmd = {}
 		if opts.latex.engine == 'latexmk' then
-			clear_cmd = {'latexmk', '-c', '-outdir=' .. file.outdir}
+			clear_cmd = {'latexmk', '-c'}
+			if file.outdir then
+				table.insert(clear_cmd, '-outdir=' .. file.outdir)
+			end
+			if file.auxdir then
+				table.insert(clear_cmd, '-auxdir=' .. file.auxdir)
+			end
 		end
 
 		-- clear aux files ind compile after then
@@ -261,7 +305,7 @@ local function compile_safe(file, opts)
 			local progress = Notify.progress_start(progress_items)
 
 			job_id.cleanup = vim.fn.jobstart(clear_cmd, {
-				cwd = file.filepath, -- clear command must be executed where .tex file is.
+				cwd = file.compiledir,
 				on_stdout = function(_, data, _)
 					if type(data) == 'string' then data = {data} end
 					progress_items.msg = data[1]
@@ -269,24 +313,22 @@ local function compile_safe(file, opts)
 				end,
 				on_exit = function ()
 					-- remove additional files by clear_ext
-					for _, ext in ipairs(opts.latex.clear_ext) do
-						local clearfile = Utils.sep_unify(file.outdir .. '/' .. file.filename_only .. ext)
-						vim.fn.delete(clearfile)
-					end
+					clear_auxfiles(file.rootdir)
 
 					-- update progress
 					progress_items.msg = 'clean up completed!'
 					Notify.progress_finish(progress, progress_items)
 
 					-- do compile
-					compile_core(file, opts)
+					compile_core(opts)
 				end
 			})
 		end
 	else
-		compile_core(file, opts)
+		compile_core(opts)
 	end
 end
+
 
 -- compile file
 ---@param opts texflow.config
@@ -295,6 +337,7 @@ M.compile = function(opts)
 	opts = vim.tbl_deep_extend('force', Config.get(), opts or {})
 
 	-- get data of file
+	Utils.update_filedata(0, opts)
 	local file = Utils.get_filedata()
 
 	-- if opts.latex.onSave set, compile() toggle autocmd
@@ -310,11 +353,11 @@ M.compile = function(opts)
 	end
 
 	-- check valid to execute command
-	if not valid_check('latex', file, opts) then
+	if not valid_check('latex', opts) then
 		return
 	end
 
-	compile_safe(file, opts)
+	compile_safe(opts)
 end
 
 return M

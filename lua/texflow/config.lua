@@ -18,11 +18,13 @@ local default_config = {
 		shellcmdflag = vim.api.nvim_get_option_value('shellcmdflag', {scope = 'global'}),
 		engine = 'latexmk',
 		args = {
+			-- '-pdf' : Create a output file in .pdf format. If there is no '-pdflatex=' option, use 'pdflatex' as engine
+			-- '-pdflatex=' : specific tex engine to create pdf. it overwrite '-pdf' option.
 			'-pdf',
 			'-interaction=nonstopmode',
 			'-synctex=1',
 			'-silent', -- small stdout result of compile
-			'@tex',
+			'@maintex',
 		},
 		-- It you use 'latexmk', `latexmk -c` is called before tex file is compiled.
 		-- It will remove aux files except of result files like `.bbl, .synctex.gz, .pdf`.
@@ -50,7 +52,7 @@ local default_config = {
 			'--reuse-window',
 			'--nofocus',
 			'--inverse-search "' .. vim.g.python3_host_prog .. ' @InverseSearch %1 %2"',
-			'--forward-search-file @tex',
+			'--forward-search-file @maintex',
 			'--forward-search-line @line',
 			'@pdf',
 		},

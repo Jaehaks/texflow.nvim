@@ -11,12 +11,11 @@ enc_candidate = ['utf-8', 'euc-kr', 'cp949', 'latin-1']
 
 class Parser:
     file:str
-    pattern:re.Pattern[str]
-    num_cores:int
+    patterns:re.Pattern[str]
     encoding:str|None
-    chunks:list[str]
+    contents:str
 
-    def __init__(self, file:str, pattern:re.Pattern[str]):
+    def __init__(self, file:str, patterns:re.Pattern[str]):
         r"""
         initialize variable at creation
 
@@ -33,10 +32,9 @@ class Parser:
             in Python, so I decided to send a bunch of single line of raw data that means up to \n.
         """
         self.file = file
-        self.pattern = pattern
-        self.num_cores = mp.cpu_count()       # Automatically detects the number of system CPU cores
+        self.patterns = patterns
         self.encoding = self.check_encoding()
-        self.chunks = self.get_file_chunks(1) # don't slicing chunk
+        self.contents = self.get_file_contents() # don't slicing chunk
 
     def check_encoding(self, encodings:list[str]=enc_candidate) -> str|None:
         """ detect file encoding """
@@ -56,27 +54,11 @@ class Parser:
         err_notify('This file encoding is not included in enc_candidate, Modify `enc_candidate` in ' + __file__ )
         return None
 
-    def get_file_chunks(self, num_cores:int|None=None) -> list[str]:
-        """Splits the file into chunks according to the number of cpu cores and returns a list of chunks."""
-        if num_cores is None:
-            num_cores = self.num_cores
-
-        with open(self.file, 'rb') as f:         # read file using bytecode for speed
-            file_size = os.fstat(f.fileno()).st_size # file size [bytes]
-            chunk_size:int = file_size // num_cores
-            chunks: list[str] = []
-
-            for i in range(num_cores):
-                start = i * chunk_size                  # set chuck boundary
-                end = start + chunk_size if i < num_cores - 1 else file_size
-
-                _ = f.seek(start)                       # Move focus to the start of the chunk
-                contents = f.read(end - start)          # read chunks
-                if i < num_cores - 1:
-                    contents += f.readline()            # read residue of the last line
-
-                chunks.append(contents.decode(self.encoding or 'utf-8')) # decode byte buffer to text
-        return chunks
+    def get_file_contents(self) -> str:
+        """ get all contents of file """
+        with open(self.file, 'r', encoding=(self.encoding or 'utf-8')) as f:
+            contents = f.read()
+        return contents
 
     def get_matches_chunk(self, chunk:str) -> list[str]:
         """
@@ -92,7 +74,7 @@ class Parser:
 
         # Scan the entire chunk once with a err_regex, show match all at once
         # see repr() to confirm what escape character is included
-        matcher: Iterator[re.Match[str]] = self.pattern.finditer(chunk)
+        matcher: Iterator[re.Match[str]] = self.patterns.finditer(chunk)
         i = 0
         for match in matcher:
 
@@ -121,11 +103,50 @@ class Parser:
 
     def get_matches_all(self):
         """ get matches of pattern from all chunks """
-        # Creating a parallel pool and assigning tasks
-        with mp.Pool(processes=self.num_cores) as pool:
-            results_all = pool.map(self.get_matches_chunk, self.chunks) # nested list is return
+        file_stack:list[str] = [] # stack to save file path which matcher meets.
+        result:list[str] = [] # final result of error/warning pattern
+        i = 0
 
-        # Merge all chunk results into one list
-        result = [item for sublist in results_all for item in sublist]
+        matcher: Iterator[re.Match[str]] = self.patterns.finditer(self.contents)
+        for match in matcher:
+            if match.lastgroup:
+                # use group name to get captured word to remove \r\n from result automatically.
+                msg = match.group(match.lastgroup)
+
+                # push to last index of file stack
+                if match.lastgroup.startswith('filestart'):
+                    # default max_print_line is 79 on latex . It will make some paths Split into two lines.
+                    # It prevent exact parsing of file. so you need to change this value upto 10000
+                    # max length of Windows is 260, and it is 4096 in Linux
+                    file_stack.append(msg) # stack all filestart. Error will belong to file unclosed parenthesis
+                    continue
+                # pop from last index of file stack
+                elif match.lastgroup.startswith('fileend'):
+                    if file_stack:
+                        _ = file_stack.pop()
+                    continue
+                # error/warning post-process
+                else:
+                    if match.lastgroup.startswith('error') or match.lastgroup.startswith('warn_pdftex'):
+                        i+=1
+                    elif match.lastgroup.startswith('line'):
+                        for n in range(i):
+                            if result[-1-n].startswith('!'): # ! l.xx ~
+                                result[-1-n] = result[-1-n][:2] + msg + result[-1-n][1:]
+                            elif result[-1-n].startswith('pdfTeX warning'): # pdfTex warning l.xx (ext4) ~
+                                result[-1-n] = result[-1-n][:15] + msg + result[-1-n][14:]
+                        i = 0
+                        continue
+                    else: # warn
+                        pass
+
+                if file_stack:
+                    result.append(file_stack[-1])
+                result.append(msg)
         return result
+
+
+
+
+
 
