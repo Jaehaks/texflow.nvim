@@ -26,14 +26,15 @@ local default_config = {
 			'-silent', -- small stdout result of compile
 			'@maintex',
 		},
-		-- It you use 'latexmk', `latexmk -c` is called before tex file is compiled.
+		-- It you use 'latexmk', `latexmk -c` is called when cleanup_auxfiles() executes.
 		-- It will remove aux files except of result files like `.bbl, .synctex.gz, .pdf`.
 		-- If you want to remove additional files in result directory, set them in clear_ext.
-		-- If you use other latex engine which doesn't support command to clear aux files,
-		-- you need to write all aux file extensions to remove.
+		-- If you use other latex engine which doesn't support command to clear auxiliary files,
+		-- you need to write all aux file extension patterns to remove.
 		clear_ext = {
-			'.bbl',
-			'.synctex.gz',
+			'%.bbl$',
+			'%.synctex%.gz$',
+			'%.aux$', -- for aux file of sub tex files
 		},
 		openAfter = false,
 		onSave = false,

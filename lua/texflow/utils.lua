@@ -26,26 +26,33 @@ local function sep_unify(path, sep_to, sep_from)
 end
 M.sep_unify = sep_unify
 
--- find files from dir
----@param dir string directory path without '/' at tail.  '.' means current path
----@param file string filename which you want to find <filename.ext> format
-local function get_filepath(dir, file)
-	-- find files in dir with depth 1 first,
-	local pattern = sep_unify(dir .. '/' .. file)
-	local files = vim.fn.glob(pattern, false, true)
-	if #files > 0 then
-		return files[1]
+-- scan and get files in rootdir recursively
+---@param rootdir string
+---@param patterns string[] regex pattern which include in result
+---@return string[]
+local function scan_dir(rootdir, patterns)
+	local results = {}
+	local fs = vim.uv.fs_scandir(rootdir)
+	if not fs then return results end
+	while true do
+		local filename, filetype = vim.uv.fs_scandir_next(fs)
+		if not filename then break end
+		local filepath = rootdir .. '/' .. filename
+		if filetype == 'directory' then
+			vim.list_extend(results, scan_dir(filepath, patterns))
+		else
+			for _, pattern in ipairs(patterns) do
+				local ok = filename:match(pattern)
+				if ok then
+					results[#results+1] = sep_unify(filepath)
+					break
+				end
+			end
+		end
 	end
-	-- find files in dir after depth 2
-	-- find files without suffix option / and return all matched files with list
-	-- the depth will limited by 2
-	pattern = sep_unify(dir .. '/**/' .. file)
-	files = vim.fn.glob(pattern, false, true)
-	if #files > 0 then
-		return files[1]
-	end
-	return ''
+	return results
 end
+M.scan_dir = scan_dir
 
 -- get root of this plugin
 local plugin_root = nil
@@ -107,6 +114,30 @@ M.delete_file = function (filepath)
 		return vim.fn.delete(filepath)
 	end
 	return -2
+end
+
+M.delete_file_async = function (files, opts, cb)
+	opts = opts or require('texflow.config').get()
+	if #files == 0 then
+		if cb then cb(opts) end
+		return
+	end
+
+	-- delete files, use async method
+	local total = #files
+	local done = 0
+	for _, delete_file in ipairs(files) do
+		vim.uv.fs_unlink(delete_file, vim.schedule_wrap(function (err)
+			if err then
+				vim.notify(vim.fn.fnamemodify(delete_file, ':t') .. ' cannot be deleted automatically, manual deleteion is required', vim.log.levels.WARN)
+			end
+
+			done = done + 1
+			if done == total and cb then
+				cb(opts)
+			end
+		end))
+	end
 end
 
 -- search whether magic comment like '% !TEX root = main.tex' exists in current file
@@ -230,7 +261,7 @@ local function search_documentclass(rootdir)
 	end
 
 	-- find \documentclass for other files in rootdir
-	local tex_files = vim.fn.glob(rootdir .. '/**/*.tex', false, true) -- get all .tex file and output to table
+	local tex_files = scan_dir(rootdir, {'%.tex$'}) -- get all .tex file and output to table
 	for _, file in ipairs(tex_files) do
 		local content = table.concat(vim.fn.readfile(file, '', 100), '\n') -- get 100 lines at top
 		if content:match('\\documentclass') then

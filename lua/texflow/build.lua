@@ -246,45 +246,42 @@ local function compile_core(opts)
 end
 
 -- clear aux files in `clear_ext` under all subdirectory of rootdir
-local function remove_clear_ext()
+---@param opts texflow.config?
+---@param cb fun(opts: texflow.config)?
+local function remove_clear_ext(opts, cb)
 	-- check clear_ext has items
-	local opts = Config.get()
+	opts = opts or Config.get()
 	if #opts.latex.clear_ext == 0 then
+		if cb then cb(opts) end
 		return
 	end
 
-	-- get file list which has clear_ext pattern
-	local filedata = Utils.get_filedata()
-	local patterns = {}
-	for _, ext in ipairs(opts.latex.clear_ext) do
-		local dir = ''
-		if vim.tbl_contains({'.pdf', '.dvi', '.ps'}, ext) then
-			dir = filedata.outdir or filedata.compiledir
-		else
-			dir = filedata.auxdir or (filedata.outdir or filedata.compiledir)
-		end
-		table.insert(patterns, dir .. '/**/*' .. ext)
-	end
-	local delete_files = vim.fn.glob(table.concat(patterns, ','), true, true)
-	if #delete_files == 0 then
-		return
+	local file = Utils.get_filedata()
+
+	-- check outdir
+	local delete_files = Utils.scan_dir(file.outdir or file.compiledir, opts.latex.clear_ext)
+
+	-- check auxdir
+	if file.auxdir then
+		local auxdir_files = Utils.scan_dir(file.auxdir, opts.latex.clear_ext)
+		delete_files = vim.list_extend(vim.deepcopy(delete_files), auxdir_files)
 	end
 
-	-- delete files
-	for _, file in ipairs(delete_files) do
-		local ok = Utils.delete_file(file)
-		if ok == -1 then
-			vim.notify(vim.fn.fnamemodify(file, ':t') .. ' cannot be deleted automatically, manual deleteion is required', vim.log.levels.WARN)
-		end
-	end
+	-- delete files, use async method
+	Utils.delete_file_async(delete_files, opts, cb)
 end
 
 
 -- clear aux files and compile
 ---@param opts texflow.config
 ---@param cb fun(opts: texflow.config)?
-local function cleanup_auxfiles(opts, cb)
+M.cleanup_auxfiles = function(opts, cb)
+	opts = opts or Config.get()
 	local file = Utils.get_filedata()
+	if not file.compiledir then
+		vim.notify('TexFlow : Compile didn\'t run before clean up', vim.log.levels.ERROR)
+		return
+	end
 
 	-- set clear command
 	local clear_cmd = {}
@@ -316,20 +313,16 @@ local function cleanup_auxfiles(opts, cb)
 		end,
 		on_exit = function ()
 			-- remove additional files by clear_ext
-			remove_clear_ext()
+			remove_clear_ext(opts, function (opt)
+				-- update progress
+				progress_items.msg = 'clean up completed!'
+				Notify.progress_finish(progress, progress_items)
 
-			-- update progress
-			progress_items.msg = 'clean up completed!'
-			Notify.progress_finish(progress, progress_items)
-
-			-- do something after clear
-			if cb then
-				cb(opts)
-			end
+				if cb then cb(opt) end
+			end)
 		end
 	})
 end
-M.cleanup_auxfiles = cleanup_auxfiles
 
 
 -- compile file

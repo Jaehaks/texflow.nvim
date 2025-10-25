@@ -141,15 +141,16 @@ require('texflow').setup({
       '-silent',
       '@maintex',
     },
-    -- It you use 'latexmk', `latexmk -c` is called before tex file is compiled.
-    -- It will remove aux files except of result files like `.bbl, .synctex.gz, .pdf`.
-    -- If you want to remove additional files in result directory, set them in clear_ext.
-    -- If you use other latex engine which doesn't support command to clear aux files,
-    -- you need to write all aux file extensions to remove.
-    clear_ext = {
-        '.bbl',
-        '.synctex.gz',
-    },
+	-- It you use 'latexmk', `latexmk -c` is called when cleanup_auxfiles() executes.
+	-- It will remove aux files except of result files like `.bbl, .synctex.gz, .pdf`.
+	-- If you want to remove additional files in result directory, set them in clear_ext.
+	-- If you use other latex engine which doesn't support command to clear auxiliary files,
+	-- you need to write all aux file extension patterns to remove.
+	clear_ext = {
+		'%.bbl$',
+		'%.synctex%.gz$',
+		'%.aux$', -- for aux file of sub tex files
+	},
     openAfter = false,	-- open viewer after compile automatically
                         -- If you set forward-search in viewer configuration, forward search is executed
     onSave = false,		-- compile *.tex automatically after buffer is saved
@@ -251,23 +252,9 @@ These @token is supported. They will be replaced with real value before job star
 
 <br>
 
-I am using this configuration using `lazy.nvim`
+I am using this keymaps using `lazy.nvim`
 
 ```lua
-opts = {
-  latex = {
-    engine = 'latexmk',
-    args = {
-      '-pdf',
-      '-outdir=build',
-      '-interaction=nonstopmode',
-      '-synctex=1',
-	  '-silent',
-      '@maintex',
-    },
-	openAfter = true,
-  },
-},
 config = function (_, opts)
   local texflow = require('texflow')
   texflow.setup(opts)
@@ -285,6 +272,9 @@ config = function (_, opts)
 
       vim.keymap.set('n', '<leader>lv', function () texflow.view() end
       , { buffer = true, desc = '[TexFlow] view pdf file', silent = true })
+
+      vim.keymap.set('n', '<leader>lc', function () texflow.cleanup_auxfiles() end
+      , { buffer = true, desc = '[TexFlow] clean up auxiliary files', silent = true })
     end
   })
 end
@@ -335,14 +325,6 @@ require('texflow').compile({
 > [!NOTE]
 > If you use `MikTeX`, packages which is called in `\usepackages` are installed automatically when compile starts if the packages are not installed.
 
-> [!TIP]
-> Sometimes, errors occur after compile even though tex file grammar is perfect If the previous compile result has error. \
-> To achieve more exact compile process, cleaning up auxiliary files which are created previous compile process is needed.
->
-> `Texflow.nvim` clean up the aux files in result directory before compile automatically if the previous result has error.
-> You can add file extension list to `clear_ext` field on config manually to remove these files.
-> `latexmk -c` will remains `.bbl`, `.pdf`, `.synctex.gz`. So default value of `clear_ext` is `{.bbl, .synctex.gz}`.
-> If you use other latex engine which doesn't support cleaning command, add all file extensions what you need.
 
 ### `Compile:options`
 
@@ -411,6 +393,44 @@ Diagnostics of sub files are supported. \
 When you have multiple sub-files used in main file and there are some errors or warning for each files,
 Diagnostics of each files will be displayed according to each files which is loaded in neovim.
 Diagnostics are automatically displayed when you open the file, even if it was not loaded at compile time.
+
+
+## `cleanup_auxfiles(opts, cb)`
+
+```lua
+-- clean up auxiliary files resulting from compilation
+---@param opts texflow.config
+---@param cb fun(opts: texflow.config)?
+require('texflow').cleanup_auxfiles(opts, cb)
+```
+
+### philosophy
+Sometimes, errors occur after compile even though tex file grammar is perfect If the previous compile result has several error. \
+To achieve more exact compile process, cleaning up auxiliary files which are created previous compile process could be needed.
+
+This process is implemented automatically when some conditions are met like below quotes at 9e19622.
+> `Texflow.nvim` clean up the aux files in result directory before compile automatically
+> if a log file resulting from compile and the previous result of compile has error.
+
+But It could be annoying because someone doesn't want this process because it make compile time longer. \
+So `cleanup_auxfiles()` function is separated independently from `compile()`, The deletion operation was performed asynchronously. \
+You can add any function like `compile()` in `cb` argument.
+
+### Usage
+This function runs first `latexmk -c` if the latex engine is set to `latexmk`.
+After that, It manually deletes files matching the patterns specified in `clear_ext`.
+So If you don't use `latexmk`, add all extensions of aux files what you want to remove in `clear_ext`.
+
+Because `latexmk -c` will leave output file like `.bbl`, `.pdf`, `.synctex.gz`.
+When you work with multiple sub tex files in sub-directory, `latexmk -c` cannot remove `.aux` files of sub tex file automatically.
+You can add file extension list using lua pattern to `clear_ext` field on config manually to remove these files.
+Default value of `clear_ext` removes `.bbl`, `.synctex.gz`, `.aux`.
+If you use other latex engine which doesn't support cleaning command, add all file extensions what you need.
+
+> [!NOTE]
+> Files matched with `clear_ext` pattern will be removed recursively from directory where compile executes.
+> So you must compile at once before clean up them.
+
 
 
 ## `Forward-Search`
