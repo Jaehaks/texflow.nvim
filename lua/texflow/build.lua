@@ -187,6 +187,11 @@ end
 -- compile tex file
 ---@param opts texflow.config
 local function compile_core(opts)
+	if job_id.compile then
+		-- vim.notify('TexFlow : compile is running! Please wait to completion', vim.log.levels.WARN)
+		return
+	end
+
 	-- get command with @token is replaced
 	local cmd = Utils.replace_cmd_token(opts.latex)
 	local file = Utils.get_filedata()

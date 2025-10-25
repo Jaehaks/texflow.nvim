@@ -330,6 +330,7 @@ require('texflow').compile({
 > You need to write `\bibliography{../test.bib}` to recognize the bib file.
 > Plus, you need to move `test.bib` file to parent directory of main tex file which declare this command.
 > It is bug of `latexmk` so It doesn't recommend to use `-outdir`.
+> The solution must be required.
 
 ### `Compile:options`
 
