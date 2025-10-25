@@ -325,6 +325,11 @@ require('texflow').compile({
 > [!NOTE]
 > If you use `MikTeX`, packages which is called in `\usepackages` are installed automatically when compile starts if the packages are not installed.
 
+> [!BUG]
+> When you set `-outdir` to push output or auxiliary files one side and use bib file,
+> You need to write `\bibliography{../test.bib}` to recognize the bib file.
+> Plus, you need to move `test.bib` file to parent directory of main tex file which declare this command.
+> It is bug of `latexmk` so It doesn't recommend to use `-outdir`.
 
 ### `Compile:options`
 
