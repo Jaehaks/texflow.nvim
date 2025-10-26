@@ -12,17 +12,31 @@ M.has_command = function(cmd)
 end
 
 -- change separator on directory depends on OS
----@param path string relative path
+---@param path string|string[] relative path
 ---@param sep_to string path separator after change
 ---@param sep_from string path separator before change
 local function sep_unify(path, sep_to, sep_from)
-	local drive = path:match('^([a-zA-Z]):[\\/]')
-	if drive then
-		path = drive:upper() .. path:sub(2)
+	local results = {}
+	local filepaths = {}
+	if type(path) == 'string' then
+		filepaths = {path}
+	else
+		filepaths = path
 	end
+
 	sep_to = sep_to or (WinOS and '\\' or '/')
 	sep_from = sep_from or ((sep_to == '/') and '\\' or '/')
-	return path:gsub(sep_from, sep_to)
+	for _, filepath in ipairs(filepaths) do
+		local drive = filepath:match('^([a-zA-Z]):[\\/]')
+		if drive then
+			filepath = drive:upper() .. filepath:sub(2)
+		end
+		results[#results+1] = filepath:gsub(sep_from, sep_to)
+	end
+	if #results == 1 then
+		return results[1]
+	end
+	return results
 end
 M.sep_unify = sep_unify
 
