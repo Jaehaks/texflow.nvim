@@ -226,13 +226,17 @@ local function compile_core(opts)
 				end
 
 				-- toggle onSave autocmd
-				if opts.latex.onSave then
+				if opts.latex.onSave and not valid['latex'].autocmd then
 					vim.api.nvim_create_augroup('TexFlow.Compile', {clear = true})
 					vim.api.nvim_create_autocmd({'BufWritePost'}, {
 						group = 'TexFlow.Compile',
-						buffer = file.bufnr,
-						callback = function ()
-							compile_core(opts)
+						callback = function (args)
+							local filepath = Utils.sep_unify(vim.api.nvim_buf_get_name(args.buf))
+							local watch = Utils.scan_dir(file.rootdir, {'%.tex$', '%.bib$'})
+							watch = Utils.sep_unify(watch)
+							if vim.tbl_contains(watch, filepath) then
+								compile_core(opts)
+							end
 						end,
 					})
 					valid['latex'].autocmd = true
