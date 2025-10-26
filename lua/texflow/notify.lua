@@ -16,10 +16,10 @@ M.progress = nil
 ---@param items texflow.notify
 ---@return ProgressHandle?
 M.progress_start = function(items)
-	M.progress_items.title        = items.title or ''
-	M.progress_items.msg          = items.msg or ''
-	M.progress_items.fidget_avail = items.fidget_avail or fidget_avail
-	M.progress_items.loglevel     = items.loglevel or vim.log.levels.INFO
+	items.title        = items.title or ''
+	items.msg          = items.msg or ''
+	items.fidget_avail = items.fidget_avail or fidget_avail
+	items.loglevel     = items.loglevel or vim.log.levels.INFO
 
 	if #items.msg > 30 then items.msg = string.sub(items.msg, 1, 30) .. '...' end
 	if items.fidget_avail then
