@@ -250,6 +250,35 @@ local function compile_core(opts)
 	})
 end
 
+-- compile file
+---@param opts texflow.config
+M.compile = function(opts)
+	-- get config
+	opts = vim.tbl_deep_extend('force', Config.get(), opts or {})
+
+	-- get data of file
+	Utils.update_filedata(0, opts)
+
+	-- if opts.latex.onSave set, compile() toggle autocmd
+	if valid.latex.autocmd then
+		vim.api.nvim_clear_autocmds({
+			event = 'BufWritePost',
+			group = 'TexFlow.Compile'
+		})
+		valid['latex'].autocmd = false
+		vim.notify('TexFlow : compile on save mode OFF', vim.log.levels.INFO)
+		return
+	end
+
+	-- check valid to execute command
+	if not valid_check('latex', opts) then
+		return
+	end
+
+	-- compile
+	compile_core(opts)
+end
+
 -- clear aux files in `clear_ext` under all subdirectory of rootdir
 ---@param opts texflow.config?
 ---@param cb fun(opts: texflow.config)?
@@ -327,38 +356,6 @@ M.cleanup_auxfiles = function(opts, cb)
 			end)
 		end
 	})
-end
-
-
--- compile file
----@param opts texflow.config
-M.compile = function(opts)
-	-- get config
-	opts = vim.tbl_deep_extend('force', Config.get(), opts or {})
-
-	-- get data of file
-	Utils.update_filedata(0, opts)
-	local file = Utils.get_filedata()
-
-	-- if opts.latex.onSave set, compile() toggle autocmd
-	if valid.latex.autocmd then
-		vim.api.nvim_clear_autocmds({
-			event = 'BufWritePost',
-			buffer = file.bufnr,
-			group = 'TexFlow.Compile'
-		})
-		valid['latex'].autocmd = false
-		vim.notify('TexFlow : compile on save mode OFF', vim.log.levels.INFO)
-		return
-	end
-
-	-- check valid to execute command
-	if not valid_check('latex', opts) then
-		return
-	end
-
-	-- compile
-	compile_core(opts)
 end
 
 return M
