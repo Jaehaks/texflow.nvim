@@ -222,7 +222,7 @@ local function compile_core(opts)
 
 				-- open viewer after compile
 				if opts.latex.openAfter then
-					view_core(opts)
+					M.view(opts)
 				end
 
 				-- toggle onSave autocmd
