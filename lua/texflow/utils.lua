@@ -263,23 +263,68 @@ local function search_main_in_rc(rootdir, opts)
 	return nil
 end
 
+-- get information which matched pattern in filepath
+---@param filepath string absolute path of file
+---@param pattern string pattern which get informations
+---@param start number? line number start
+---@return number? line number which matched first
+---@return table? captures result if pattern has capture sign ( )
+M.get_lineinfo_from_pattern = function(filepath, pattern, start)
+	local lnum = nil
+	local captures = nil
+	local chunk_size = 1000
+	local bufnr = vim.fn.bufnr(filepath)
+
+	-- if the file is loaded
+	if bufnr > 0 then
+		local lc = vim.api.nvim_buf_line_count(bufnr)
+		for s_line = start or 0, lc - 1, chunk_size do
+			local e_line = math.min(s_line + chunk_size, lc)
+			local lines = vim.api.nvim_buf_get_lines(bufnr, s_line, e_line, false)
+			for i, line in ipairs(lines) do
+				local matched = {line:match(pattern)}
+				if #matched > 0 then
+					lnum = s_line + i
+					captures = matched
+				end
+				if line:match(pattern) then
+				-- if line:match("^%s*\\documentclass%s*%[(.+)%]%{subfiles%}") then
+					lnum = i
+					break
+				end
+			end
+			if lnum then break end
+		end
+	end
+	return lnum, captures
+end
+
 ---@param rootdir string
 ---@return string? main file list
 local function search_documentclass(rootdir)
-	-- find \documentclass in current file
-	local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
-	local contents = table.concat(lines, '\n')
-	local matched = contents:match('\\documentclass')
+	-- check documentclass of current file is {subfiles}
+	local curfile = vim.api.nvim_buf_get_name(0)
+	local curdir = vim.fn.fnamemodify(curfile, ':h')
+	local lnum, matched = M.get_lineinfo_from_pattern(curfile, "^%s*\\documentclass%s*%[(.-)%]%{subfiles%}")
 	if matched then
-		return sep_unify(vim.api.nvim_buf_get_name(0))
+		local mainfile = is_AbsolutePath(matched[1]) and matched[1] or vim.fn.fnamemodify(curdir .. '/' .. matched[1], ':p')
+		return sep_unify(mainfile)
+	end
+
+	-- check documentclass of current file is main
+	lnum, _ = M.get_lineinfo_from_pattern(curfile,"^%s*\\documentclass", lnum)
+	if lnum then
+		return sep_unify(curfile)
 	end
 
 	-- find \documentclass for other files in rootdir
 	local tex_files = scan_dir(rootdir, {'%.tex$'}) -- get all .tex file and output to table
 	for _, file in ipairs(tex_files) do
-		local content = table.concat(vim.fn.readfile(file, '', 100), '\n') -- get 100 lines at top
-		if content:match('\\documentclass') then
-			return sep_unify(file)
+		if file ~= curfile then
+			lnum, _ = M.get_lineinfo_from_pattern(file, "^%s*\\documentclass")
+			if lnum then
+				return sep_unify(file)
+			end
 		end
 	end
 

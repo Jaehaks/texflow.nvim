@@ -24,37 +24,6 @@ local captures = {
 ---@type table<string, texflow.diagnosticItem[]>
 local diagnostics = {} -- show diagnostics in statuscolumn
 
--- get lnum from pattern if the file is loaded or return nil
----@param filepath string
----@param pattern string
----@return number?
-local function get_lnum_from_pattern(filepath, pattern)
-	local lnum = nil
-	local bufnr = vim.fn.bufnr(filepath)
-	if bufnr > 0 then -- if main buffer is opened
-		-- detect line number where package name is located
-		local lc = vim.api.nvim_buf_line_count(bufnr)
-		local line_chunks = 50
-		local page_chunks = math.floor(lc/line_chunks)
-		for p = 1, page_chunks do
-			local start_line = (p-1)*line_chunks
-			local end_line = start_line + line_chunks
-			local contents = vim.api.nvim_buf_get_lines(bufnr, start_line, end_line, false)
-			for i, content in ipairs(contents) do
-				if string.find(content, pattern) then
-					lnum = i
-					break
-				end
-			end
-			if lnum then
-				break
-			end
-		end
-	end
-
-	return lnum
-end
-
 -- add diagnostic
 ---@param data table output data table from python log parser
 local function add_diagnostic(data)
@@ -121,7 +90,7 @@ local function add_diagnostic(data)
 			-- is shown in main file to notify user.
 			local pkg = unpack(warn_pkg)
 			local pattern = '\\usepackage.*%{' .. pkg .. '%}'
-			lnum = get_lnum_from_pattern(file.mainpath, pattern)
+			lnum = Utils.get_lineinfo_from_pattern(file.mainpath, pattern)
 			msg = line
 			mtype = vim.diagnostic.severity.WARN
 		end
