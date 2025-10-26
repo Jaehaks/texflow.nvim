@@ -174,6 +174,7 @@ local function get_log_core_py(opts)
 	vim.fn.jobstart(cmd, {
 		stdout_buffered = true,
 		on_stdout = function(_, data)
+			if not data then return end
 
 			-- remove additional \r for windows
 			local ndata = {}

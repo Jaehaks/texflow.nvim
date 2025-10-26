@@ -210,9 +210,14 @@ local function compile_core(opts)
 		cwd = file.compiledir,
 		stdout_buffered = false, 	-- output will be transferred every stdout
 		on_stdout = function(_, data, _)
+			if not data then return end
 			if type(data) == 'string' then data = {data} end
-			progress_items.msg = data[1]
-			Notify.progress_report(progress, progress_items)
+			for _, str in ipairs(data) do
+				if str ~= '' then
+					progress_items.msg = str
+					Notify.progress_report(progress, progress_items)
+				end
+			end
 		end,
 		on_exit = function(_, code, _)
 			if code == 0 then
@@ -346,9 +351,14 @@ M.cleanup_auxfiles = function(opts, cb)
 	job_id.cleanup = vim.fn.jobstart(clear_cmd, {
 		cwd = file.compiledir,
 		on_stdout = function(_, data, _)
+			if not data then return end
 			if type(data) == 'string' then data = {data} end
-			progress_items.msg = data[1]
-			Notify.progress_report(progress, progress_items)
+			for _, str in ipairs(data) do
+				if str ~= '' then
+					progress_items.msg = str
+					Notify.progress_report(progress, progress_items)
+				end
+			end
 		end,
 		on_exit = function ()
 			-- remove additional files by clear_ext
