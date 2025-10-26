@@ -198,7 +198,7 @@ local function compile_core(opts)
 
 	-- show progress message
 	local progress_items = {
-		title = 'compiling ' .. vim.fn.expand('%:t'),
+		title = 'compiling ' .. file.compilename,
 		msg = 'start with' .. opts.latex.engine,
 		loglevel = vim.log.levels.INFO,
 	}

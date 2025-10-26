@@ -363,6 +363,8 @@ end
 ---@field mainname string filename with extension of main tex file.
 ---@field mainname_only string filename without extension of main tex file.
 ---@field compiledir string absolute path where compile is executed
+---@field compilename string filename where compile executes
+---@field compilename_only string filename only  where compile executes
 ---@field bufnr number buffer number of current file
 ---@field pdffile string full filepath of pdf file related with tex
 ---@field logfile string full filepath of log file related with tex
@@ -398,11 +400,12 @@ M.update_filedata = function(bufnr, opts)
 	-- get outdir/auxdir from latex command args
 	-- WARNING: Don't use @token in `-outdir` or `-auxdir`
 	local outdir, auxdir = nil, nil
-	local compilename_only, compiledir = nil, nil
+	local compilename_only, compilename, compiledir = nil, nil, nil
 	for _, arg in ipairs(opts.latex.args) do
 		outdir = outdir or string.match(arg, '^%-outdir%s*=?%s*(.*)')
 		auxdir = auxdir or string.match(arg, '^%-auxdir%s*=?%s*(.*)')
 		compiledir = compiledir or (string.match(arg,'@curtex') and filedir) or (string.match(arg,'@maintex') and maindir)
+		compilename = compilename or (string.match(arg,'@curtex') and filename) or (string.match(arg,'@maintex') and mainname)
 		compilename_only = compilename_only or (string.match(arg,'@curtex') and filename_only) or (string.match(arg,'@maintex') and mainname_only)
 		if string.match(arg, '@curtex') and fileext ~= 'tex' then
 			vim.notify('ERROR : current file is not *.tex file')
@@ -419,23 +422,25 @@ M.update_filedata = function(bufnr, opts)
 	local logfile = sep_unify((auxdir or (outdir or compiledir)) .. '/' .. compilename_only .. '.log')
 
 	filedata = {
-		line          = line,
-		rootdir       = rootdir,
-		filepath      = filepath,
-		filedir       = filedir,
-		filename      = filename,
-		filename_only = filename_only,
-		fileext       = fileext,
-		mainpath      = mainpath,
-		maindir       = maindir,
-		mainname      = mainname,
-		mainname_only = mainname_only,
-		compiledir 	  = compiledir,
-		bufnr         = bufnr,
-		pdffile       = pdffile,
-		logfile       = logfile,
-		outdir        = outdir,
-		auxdir        = auxdir,
+		line             = line,
+		rootdir          = rootdir,
+		filepath         = filepath,
+		filedir          = filedir,
+		filename         = filename,
+		filename_only    = filename_only,
+		fileext          = fileext,
+		mainpath         = mainpath,
+		maindir          = maindir,
+		mainname         = mainname,
+		mainname_only    = mainname_only,
+		compiledir       = compiledir,
+		compilename      = compilename,
+		compilename_only = compilename_only,
+		bufnr            = bufnr,
+		pdffile          = pdffile,
+		logfile          = logfile,
+		outdir           = outdir,
+		auxdir           = auxdir,
 	}
 end
 
