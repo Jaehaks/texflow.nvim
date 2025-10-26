@@ -148,7 +148,7 @@ local function view_core(opts)
 	local jid = vim.fn.jobstart(cmd, {
 		detach = false,      -- detach = false needs to remove cmd prompt window blinking
 		on_exit = function (_, code, _)
-			if code ~= 0 then
+			if code ~= 0 and job_id.viewer then
 				local progress_items = {
 					title = 'Opening viewer',
 					msg = 'Fail to open viewer(' .. code .. ')',
