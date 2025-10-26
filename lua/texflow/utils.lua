@@ -402,14 +402,25 @@ M.update_filedata = function(bufnr, opts)
 	local outdir, auxdir = nil, nil
 	local compilename_only, compilename, compiledir = nil, nil, nil
 	for _, arg in ipairs(opts.latex.args) do
-		outdir = outdir or string.match(arg, '^%-outdir%s*=?%s*(.*)')
-		auxdir = auxdir or string.match(arg, '^%-auxdir%s*=?%s*(.*)')
-		compiledir = compiledir or (string.match(arg,'@curtex') and filedir) or (string.match(arg,'@maintex') and maindir)
-		compilename = compilename or (string.match(arg,'@curtex') and filename) or (string.match(arg,'@maintex') and mainname)
-		compilename_only = compilename_only or (string.match(arg,'@curtex') and filename_only) or (string.match(arg,'@maintex') and mainname_only)
+		-- If current file is not tex file when you set @curtex, abort.
 		if string.match(arg, '@curtex') and fileext ~= 'tex' then
 			vim.notify('ERROR : current file is not *.tex file')
 			return
+		end
+
+		-- set outdir / auxdir
+		outdir = outdir or string.match(arg, '^%-outdir%s*=?%s*(.*)')
+		auxdir = auxdir or string.match(arg, '^%-auxdir%s*=?%s*(.*)')
+
+		-- set variable related with compile location
+		if not compiledir and string.match(arg, '@curtex') then
+			compiledir = filedir
+			compilename = filename
+			compilename_only = filename_only
+		elseif not compiledir and string.match(arg, '@maintex') then
+			compiledir = maindir
+			compilename = mainname
+			compilename_only = mainname_only
 		end
 	end
 	outdir = outdir and (compiledir .. '/' .. outdir)

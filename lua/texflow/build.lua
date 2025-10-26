@@ -146,6 +146,7 @@ local function view_core(opts)
 	vim.fn.Texflow_save_server_mapping(Utils.sep_unify(file.filepath, '/'))
 	set_autocmd('viewer', file)
 	local jid = vim.fn.jobstart(cmd, {
+		cwd = file.filedir,
 		detach = false,      -- detach = false needs to remove cmd prompt window blinking
 		on_exit = function (_, code, _)
 			if code ~= 0 and job_id.viewer then
