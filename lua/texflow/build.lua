@@ -50,31 +50,35 @@ local function job_clear(type)
 	return true
 end
 
+-- stop local function
+local function job_stop(type)
+	pcall(vim.fn.jobstop, job_id[type])
+	job_id[type] = nil
+end
+
 
 -- set autocmd for viewer, If tex buffer is deleted, the corresponding pdf file viewer is terminated
 ---@param type string field name of job_id
 ---@param file texflow.filedata file data
 local function set_autocmd(type, file)
 	if type == 'viewer' and not job_id.viewer then
-		-- stop local function
-		local function stop_viewer()
-			pcall(vim.fn.jobstop, job_id.viewer)
-			job_id.viewer = nil
-		end
-
 		-- make autocmd to close job when related tex buffer is closed
 		vim.api.nvim_create_augroup('TexFlow.Viewer', {clear = true})
 		vim.api.nvim_create_autocmd({'BufDelete'}, {
 			group = 'TexFlow.Viewer',
 			buffer = file.bufnr,
 			once = true,
-			callback = stop_viewer,
+			callback = function ()
+				job_stop('viewer')
+			end,
 		})
 		vim.api.nvim_create_autocmd({'VimLeave'}, {
 			group = 'TexFlow.Viewer',
 			pattern = '*',
 			once = true,
-			callback = stop_viewer,
+			callback = function ()
+				job_stop('viewer')
+			end,
 		})
 	end
 end
