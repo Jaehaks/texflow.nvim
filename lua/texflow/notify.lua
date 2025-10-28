@@ -24,8 +24,8 @@ M.progress_start = function(items)
 	if #items.msg > 30 then items.msg = string.sub(items.msg, 1, 30) .. '...' end
 	if items.fidget_avail then
 		M.progress = fidget.progress.handle.create({
-			message    = items.msg,
 			title      = items.title,
+			message    = items.msg,
 			lsp_client = { name = 'texflow.nvim' },
 		})
 	else
@@ -41,7 +41,10 @@ M.progress_report = function(progress, items)
 	-- limit to too long string to 30 characters
 	if #items.msg > 30 then items.msg = string.sub(items.msg, 1, 30) .. '...' end
 	if progress then
-		progress:report({ message = items.msg })
+		progress:report({
+			title = items.title,
+			message = items.msg,
+		})
 	else
 		vim.notify(items.title .. ' : ' .. items.msg, items.loglevel)
 	end
@@ -52,7 +55,11 @@ end
 M.progress_finish = function(progress, items)
 	if #items.msg > 30 then items.msg = string.sub(items.msg, 1, 30) .. '...' end
 	if progress then
-		progress:report({ message = items.msg, done = true })
+		progress:report({
+			title = items.title,
+			message = items.msg,
+			done = true
+		})
 		progress:finish()
 		M.progress = nil
 		M.progress_items = {}
