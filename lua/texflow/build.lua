@@ -26,6 +26,7 @@ local valid = {
 		execute = false,
 		autocmd = false,
 		errored	= false,
+		pvc_mode = false,
 	},
 
 	---@class texflow.valid.viewer
@@ -188,6 +189,36 @@ M.view = function (opts)
 	view_core(opts)
 end
 
+-- add additional flag to cmd
+---@param cmd string[]
+---@param opts texflow.config
+---@return string[]?
+local function add_pvc_cmd(cmd, opts)
+	local sep = ':::::'
+	local cmd_s = table.concat(cmd, sep)
+
+	if opts.latex.engine == 'latexmk' then
+		if string.find(cmd_s, '%s+%-pvc%s+') then
+			vim.notify('remove "-pvc" option from latex.args in config, use "onSave" option of "texflow.nvim"', vim.log.levels.ERROR)
+			return nil
+		else
+			cmd[#cmd+1] = '-pvc -view=none'
+		end
+	elseif opts.latex.engine == 'tectonic' then
+		if string.find(cmd_s, '%s+%-X watch%s+') then
+			vim.notify('remove "-X watch" option from latex.args in config, use "onSave" option of "texflow.nvim"', vim.log.levels.ERROR)
+			return nil
+		else
+			cmd[#cmd+1] = '-X watch'
+		end
+	else
+		vim.notify(opts.latex.engine .. ' doesn\'t support "inherit" mode, use "plugin" instead on "onSave" option', vim.log.levels.ERROR)
+		return nil
+	end
+
+	valid['latex'].pvc_mode = true
+	return cmd
+end
 
 -- compile tex file
 ---@param opts texflow.config
@@ -200,6 +231,14 @@ local function compile_core(opts)
 	-- get command with @token is replaced
 	local cmd = Utils.replace_cmd_token(opts.latex)
 	local file = Utils.get_filedata()
+
+	-- check consecutive mode is supported for latex engine
+	if opts.latex.onSave == 'inherit' then
+		local pvc_cmd = add_pvc_cmd(cmd, opts)
+		if not pvc_cmd then return end
+		cmd = pvc_cmd
+	end
+
 
 	-- show progress message
 	local progress_items = {
@@ -218,6 +257,16 @@ local function compile_core(opts)
 			if type(data) == 'string' then data = {data} end
 			for _, str in ipairs(data) do
 				if str ~= '' then
+					if valid['latex'].pvc_mode then
+						progress_items.title = 'compiling(pvc) ' .. file.compilename
+						if string.find(str, '^=== Watching for updated files') then -- check end of compile
+							str = ''
+							Diag.errorCheck(opts)
+							if opts.latex.openAfter then
+								M.view(opts)
+							end
+						end
+					end
 					progress_items.msg = str
 					Notify.progress_report(progress, progress_items)
 				end
@@ -230,12 +279,12 @@ local function compile_core(opts)
 				valid['latex'].errored = false
 
 				-- open viewer after compile
-				if opts.latex.openAfter then
+				if opts.latex.openAfter and not valid['latex'].pvc_mode then
 					M.view(opts)
 				end
 
 				-- toggle onSave autocmd
-				if opts.latex.onSave and not valid['latex'].autocmd then
+				if opts.latex.onSave == 'plugin' and not valid['latex'].autocmd then
 					vim.api.nvim_create_augroup('TexFlow.Compile', {clear = true})
 					vim.api.nvim_create_autocmd({'BufWritePost'}, {
 						group = 'TexFlow.Compile',
@@ -252,13 +301,21 @@ local function compile_core(opts)
 					vim.notify('TexFlow : compile on save mode ON', vim.log.levels.INFO)
 				end
 			else
-				progress_items.msg = 'compile ERROR(' .. code .. ')'
-				progress_items.loglevel = vim.log.levels.ERROR
-				Notify.progress_finish(progress, progress_items)
-				valid['latex'].errored = true
+				if not valid['latex'].pvc_mode then
+					progress_items.msg = 'compile ERROR(' .. code .. ')'
+					progress_items.loglevel = vim.log.levels.ERROR
+					Notify.progress_finish(progress, progress_items)
+					valid['latex'].errored = true
+				else
+					progress_items.msg = 'stop'
+					Notify.progress_finish(progress, progress_items)
+					valid['latex'].pvc_mode = false
+				end
 			end
 			-- show diagnostics for error
-			Diag.errorCheck(opts)
+			if not valid['latex'].pvc_mode then
+				Diag.errorCheck(opts)
+			end
 			job_clear('compile')
 		end
 	})
@@ -281,6 +338,9 @@ M.compile = function(opts)
 		})
 		valid['latex'].autocmd = false
 		vim.notify('TexFlow : compile on save mode OFF', vim.log.levels.INFO)
+		return
+	elseif valid.latex.pvc_mode then
+		job_stop('compile')
 		return
 	end
 

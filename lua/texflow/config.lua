@@ -12,7 +12,7 @@ local default_config = {
 	---@field args table arguments for latex engine
 	---@field clear_ext table file extensions which is forced clear before tex file is compiled
 	---@field openAfter boolean open viewer after compile.
-	---@field onSave boolean compile automatically after save
+	---@field onSave string? method to compile automatically after save
 	latex = {
 		shell = vim.api.nvim_get_option_value('shell', {scope = 'global'}),
 		shellcmdflag = vim.api.nvim_get_option_value('shellcmdflag', {scope = 'global'}),
@@ -36,8 +36,17 @@ local default_config = {
 			'%.synctex%.gz$',
 			'%.aux$', -- for aux file of sub tex files
 		},
+		-- boolean : open viewer automatically after compile
+		-- If true, viewer will opens after every compile, if you set forward search in viewer.args, It does forward-search.
+		-- you can use forward search manually with setting this value false.
 		openAfter = false,
-		onSave = false,
+		-- string : which method uses to automatically compile every file save in project
+		-- nil : don't compile automatically after file save
+		-- 'inherit' : If latex engine supports consecutive compile mode, use the mode.
+		-- 			   'latexmk' and 'tectonic' are recognized until now.
+		-- 'plugin' : If latex engine doesn't supports consecutive compile mode, use it.
+		-- 			  It simulates 'inherit' mode in texflow.nvim itself.
+		onSave = nil,
 	},
 
 	---@class texflow.config.viewer
