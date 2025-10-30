@@ -183,7 +183,13 @@ local function get_log_core_py(opts)
 			for _, v in ipairs(data) do
 				local line = v:gsub('\r', '')
 				if line ~= '' then
-					table.insert(ndata, line)
+					-- add residue message If warn_pkg has multiple sentences.
+					local residue_warn_pkg = string.match(line, '^%(%w+%)%s*(.*)')
+					if residue_warn_pkg then
+						ndata[#ndata] = ndata[#ndata] .. '\n' .. residue_warn_pkg
+					else
+						table.insert(ndata, line)
+					end
 				end
 			end
 

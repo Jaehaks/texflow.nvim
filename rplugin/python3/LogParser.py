@@ -51,7 +51,9 @@ def main():
         # If \b doesn't exist, \w word right after l.21 will be captured. the line number always add white space.
         "line": r'^(?P<line>l\.\d+)\b',                                  # l.21 ~
         "warn_latex": r'^(?P<warn_latex>LaTeX Warning:.*?\.)(?:\n|$)',   # LaTeX Warning: There were undefined references.
-        "warn_pkg": r'^(?P<warn_pkg>Package \w+ Warning:.*?\.)(?:\n|$)', # Package <name> Warning: messages
+        # Package <name> Warning: messages,
+        # It can be multiple sentences with starting '(name)', so the end condition must be \n\n
+        "warn_pkg": r'^(?P<warn_pkg>Package \w+ Warning:.*?\.)(?:\n\n|\n$)',
         "warn_pdftex": r'^(?P<warn_pdftex>pdfTeX warning.*?)(?=\s{3,})', # pdfTex warning (ext4): ~ end with multiple white spaces
         # <warn_toc> : warning (pdf backend) : ~~ \n[1
         # it capture until \[ but excludes \n or $
