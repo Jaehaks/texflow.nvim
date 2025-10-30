@@ -174,6 +174,7 @@ local function get_log_core_py(opts)
 
 	-- load job
 	vim.fn.jobstart(cmd, {
+		env = { PYTHONIOENCODING = 'utf-8', },
 		stdout_buffered = true,
 		on_stdout = function(_, data)
 			if not data then return end
