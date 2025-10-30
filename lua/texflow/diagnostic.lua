@@ -113,7 +113,7 @@ local function add_diagnostic(data)
 			---@field namespace number
 			local item = {
 				lnum = lnum and tonumber(lnum)-1 or 0,
-				col = 1,
+				col = lnum and 0 or 1,
 				severity = mtype,
 				message = msg,
 				source = ns_name,
