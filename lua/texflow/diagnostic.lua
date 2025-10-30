@@ -143,6 +143,8 @@ local function add_diagnostic(data)
 end
 
 local function set_diagnostic_autocmd()
+	local file = Utils.get_filedata()
+
 	vim.api.nvim_create_augroup('TexFlow.Diagnostics', {clear = true})
 	vim.api.nvim_create_autocmd({'BufReadPost'}, {
 		group = 'TexFlow.Diagnostics',
@@ -154,10 +156,26 @@ local function set_diagnostic_autocmd()
 			end
 		end,
 	})
-	vim.api.nvim_create_autocmd({'DiagnosticChanged'}, {
+	vim.api.nvim_create_autocmd({'DiagnosticChanged', 'BufWinEnter'}, {
 		group = 'TexFlow.Diagnostics',
-		callback = function ()
-			vim.diagnostic.setqflist({open = false, severity_sort = true}) -- add quickfix list
+		callback = function (args)
+			local filepath = Utils.sep_unify(vim.api.nvim_buf_get_name(args.buf))
+			-- add diagnostics of project to quickfix list It current buffer is in latex project
+			if string.match(filepath, file.compiledir) then
+				local ns_list = vim.diagnostic.get_namespaces()
+				local diag_list = {}
+				for id, ns in pairs(ns_list) do
+					-- add diagnostics of texlab or texflow lsp
+					if string.find(ns.name, 'texlab') or string.find(ns.name, 'texflow') then
+					-- if string.find(ns.name, 'texflow') then
+						local diags = vim.diagnostic.get(nil, {namespace = id})
+						vim.list_extend(diag_list, diags)
+					end
+				end
+				-- qflist update
+				local qfitems = vim.diagnostic.toqflist(diag_list)
+				vim.fn.setqflist(qfitems, 'r')
+			end
 		end,
 	})
 end
