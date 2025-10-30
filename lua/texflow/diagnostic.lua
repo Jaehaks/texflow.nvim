@@ -167,7 +167,6 @@ local function set_diagnostic_autocmd()
 				for id, ns in pairs(ns_list) do
 					-- add diagnostics of texlab or texflow lsp
 					if string.find(ns.name, 'texlab') or string.find(ns.name, 'texflow') then
-					-- if string.find(ns.name, 'texflow') then
 						local diags = vim.diagnostic.get(nil, {namespace = id})
 						vim.list_extend(diag_list, diags)
 					end
