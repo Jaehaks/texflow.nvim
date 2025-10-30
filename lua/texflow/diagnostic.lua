@@ -154,6 +154,12 @@ local function set_diagnostic_autocmd()
 			end
 		end,
 	})
+	vim.api.nvim_create_autocmd({'DiagnosticChanged'}, {
+		group = 'TexFlow.Diagnostics',
+		callback = function ()
+			vim.diagnostic.setqflist({open = false, severity_sort = true}) -- add quickfix list
+		end,
+	})
 end
 
 ---@param opts texflow.config
