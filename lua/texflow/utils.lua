@@ -40,6 +40,20 @@ local function sep_unify(path, sep_to, sep_from)
 end
 M.sep_unify = sep_unify
 
+-- get relative path based on basedir first. if not, original file
+---@param filepath string absolute path to make relative path
+---@param basedir string absolute path which is the base, (it must ends with slash)
+---@return string relative path of filepath
+M.get_relative_path = function(filepath, basedir)
+	local path
+	if filepath:sub(1, #basedir) == basedir then
+		path = '.' .. filepath:sub(#basedir + 1)
+	else
+		path = filepath
+	end
+	return M.sep_unify(path)
+end
+
 -- scan and get files in rootdir recursively
 ---@param rootdir string
 ---@param patterns string[] regex pattern which include in result

@@ -97,7 +97,9 @@ local function add_diagnostic(data)
 
 		if msg then
 			-- if filepath is not in compile directory, the message shows the path too.
-			if not string.match(filepath, file.compiledir) then
+			-- if not string.match(filepath, file.compiledir) then
+			if not string.match(filepath, file.mainpath) then
+				filepath = Utils.get_relative_path(filepath, file.maindir)
 				msg = 'In ' .. filepath .. '\n' .. msg
 				filepath = warn_pkg[1] and file.mainpath or file.filepath
 			end
