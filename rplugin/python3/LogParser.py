@@ -46,6 +46,7 @@ def main():
         # It captures all strings from '!' to \n or $ after dot(.).
         # '.*?' means non-greedy capture '.*' + '?'. because '.*' means greedy capture which captures more than one line.
         "error2": r'^(?P<error2>! .*?\.)(?:\n|$)',                       # ! LaTeX Error: ~
+        "error_pkg": r'^(?P<error_pkg>Package \w+ Error:.*?\.)(?:\n\n|\n$)',
         # <line> : l.21 \beigne~
         # capture <l.21> only, \b is added to distinguish word boundary.
         # If \b doesn't exist, \w word right after l.21 will be captured. the line number always add white space.

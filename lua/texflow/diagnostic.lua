@@ -11,6 +11,7 @@ local captures = {
 	filename   = "^%((.+)$",
 	error1     = "^[^:]+:(%d+): (.+)$",
 	error2     = "^!%s+l%.(%d+)%s(.+)$",
+	error_pkg   = "^Package (%w+) Error:.*",
 	warn       = "LaTeX Warning:%s+(.*) on input line (%d+)%.",
 	warn_only  = "^LaTeX Warning:%s+[^%d]+%.",
 	warn_over  = "^Overfull.*at lines (%d+)",
@@ -40,6 +41,7 @@ local function add_diagnostic(data)
 		local filename   = {line:match(captures.filename)}
 		local error1     = {line:match(captures.error1)}
 		local error2     = {line:match(captures.error2)}
+		local error_pkg  = {line:match(captures.error_pkg)}
 		local warn       = {line:match(captures.warn)}
 		local warn_only  = {line:match(captures.warn_only)}
 		local warn_other = {line:match(captures.warn_other)}
@@ -93,6 +95,12 @@ local function add_diagnostic(data)
 			lnum = Utils.get_lineinfo_from_pattern(file.mainpath, pattern)
 			msg = line
 			mtype = vim.diagnostic.severity.WARN
+		elseif error_pkg[1] then
+			local pkg = unpack(error_pkg)
+			local pattern = '\\usepackage.*%{' .. pkg .. '%}'
+			lnum = Utils.get_lineinfo_from_pattern(file.mainpath, pattern)
+			msg = line
+			mtype = vim.diagnostic.severity.ERROR
 		end
 
 		if msg then
@@ -101,7 +109,7 @@ local function add_diagnostic(data)
 			if not string.match(filepath, file.mainpath) then
 				filepath = Utils.get_relative_path(filepath, file.maindir)
 				msg = 'In ' .. filepath .. '\n' .. msg
-				filepath = warn_pkg[1] and file.mainpath or file.filepath
+				filepath = (warn_pkg[1] or error_pkg[1]) and file.mainpath or file.filepath
 			end
 
 			---@class texflow.diagnosticItem
