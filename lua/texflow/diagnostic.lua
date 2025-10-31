@@ -164,12 +164,12 @@ local function set_diagnostic_autocmd()
 			end
 		end,
 	})
-	vim.api.nvim_create_autocmd({'DiagnosticChanged', 'BufWinEnter'}, {
+	vim.api.nvim_create_autocmd({'DiagnosticChanged'}, {
 		group = 'TexFlow.Diagnostics',
 		callback = function (args)
 			local filepath = Utils.sep_unify(vim.api.nvim_buf_get_name(args.buf))
 			-- add diagnostics of project to quickfix list It current buffer is in latex project
-			if string.match(filepath, file.compiledir) then
+			if (filepath and filepath ~= '') and string.match(filepath, '^' .. file.compiledir) then
 				local ns_list = vim.diagnostic.get_namespaces()
 				local diag_list = {}
 				for id, ns in pairs(ns_list) do
