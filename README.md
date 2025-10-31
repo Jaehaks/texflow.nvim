@@ -163,7 +163,7 @@ require('texflow').setup({
       '--reuse-window',
       '--nofocus',
       '--inverse-search "' .. vim.g.python3_host_prog .. ' @InverseSearch %1 %2"',
-      '--forward-search-file @maintex',
+      '--forward-search-file @curtex',
       '--forward-search-line @line',
       '@pdf',
     },
@@ -488,21 +488,9 @@ You can override inverse-search setting by cli command option.
 Pass `python @InverseSearch %1 %2` as an argument of the option like default configuration.
 You can use python execution file in virtual environment instead of globally `python` execution file.
 
-For example, for `sioyek`, you can add this configuration in `setup()` (It is default)
+For example, for `sioyek`, you can add [[#sioyekhttpsgithubcomahrmsioyektreedevelopment|Viewer Examples > sioyek]] this configuration in `setup()` (It is default)
 
-```lua
-{
-  engine = 'sioyek',
-  args = {
-    '--reuse-window',
-    '--nofocus',
-    '--inverse-search "python @InverseSearch %1 %2"',
-    '--forward-search-file @maintex',
-    '--forward-search-line @line',
-    '@pdf',
-  },
-}
-```
+
 
 
 ### case2) CLI option such as `--inverse-search` is `not` supported in viewer.
@@ -528,7 +516,7 @@ inverse_search_command python <installpath>\texflow.nvim\rplugin\python3\Inverse
 
 # Viewer Examples
 
-## [1) sioyek](https://github.com/ahrm/sioyek/tree/development)
+## [sioyek](https://github.com/ahrm/sioyek/tree/development)
 
 It is recommended that you use the development branch. \
 <u>`--inverse-search` option accepts only one parameter. So you must enclose the command with quotes("").</u> \
@@ -540,7 +528,7 @@ args = {
   '--reuse-window',
   '--nofocus',
   '--inverse-search "' .. vim.g.python3_host_prog .. ' @InverseSearch %1 %2"',
-  '--forward-search-file @maintex',
+  '--forward-search-file @curtex',
   '--forward-search-line @line',
   '@pdf',
 },
