@@ -1,5 +1,29 @@
 # ChnageLog
 
+## 2025-11-02
+
+### Bug fixed
+- Fix that wrong file name is shown in fidget message title while compiling [d7dde49](https://github.com/Jaehaks/texflow.nvim/commit/d7dde499dc37bfc835c107c0a4d6a141fe62d318)
+- Fix that wrong failed message when tex file is closed [79b7c5f](https://github.com/Jaehaks/texflow.nvim/commit/79b7c5fdf76f154b0f145c2cc65d35144e4b9b39)
+- Add `\documentclass[*]{subfiles}` pattern to find main file [f112858](https://github.com/Jaehaks/texflow.nvim/commit/f1128589582ee7cbbfae1cf7daaa4e03859ad4bc)
+- Check nil to proper catch data [963c590](https://github.com/Jaehaks/texflow.nvim/commit/963c5902aeb8ccc73bafe2433cc5539c2ccb1da1)
+- Show relative path when `warn_pkg` indicates a file in project [191474c](https://github.com/Jaehaks/texflow.nvim/commit/191474c648dc025bc0d9510c1e5278897a7097b7)
+- Fix where non English characters would broken [db5ad3a](https://github.com/Jaehaks/texflow.nvim/commit/db5ad3a1b798d930d050d392b6a633f38fe4737b)
+
+### ReFactoring
+- Separate `cleanup_auxfiles()` independently from `compile()` [675066c](https://github.com/Jaehaks/texflow.nvim/commit/675066c4512a7a8d2e7e28f8e3eced595be82f54)
+
+
+### Features
+- Add `cleanup_auxfiles()` to clear aux file of project. [517403d](https://github.com/Jaehaks/texflow.nvim/commit/517403df2f6d90cb2d7f637b7fa99014310762f9)
+- Supports `view()` for multiple sub-file project [9a0a7a9](https://github.com/Jaehaks/texflow.nvim/commit/9a0a7a9b4a5c37a9590b09a366a3486c570c4d1a)
+	- It shows pdf files of main tex file in project.
+- Add `inherit` consecutive compile mode for onSave [40bcee9](https://github.com/Jaehaks/texflow.nvim/commit/40bcee909a474d09616ed0d14b37e246dc00384e)
+- Supports multiple sentences of `warn_pkg` and `error_pkg` in diagnostic message. [54cc6d6](https://github.com/Jaehaks/texflow.nvim/commit/54cc6d67a024666c04070e0b52e7efbfbb503d1e), [f09afd5](https://github.com/Jaehaks/texflow.nvim/commit/f09afd585d553fa47c677d864ffd47a9808248f2)
+- Add workspace diagnostics to quickfix list automatically [c347261](https://github.com/Jaehaks/texflow.nvim/commit/c34726164ae4f68e8556a658a052223389c5023d)
+	- Add diagnostics of texlab/texflow to quickfix [ead177a](https://github.com/Jaehaks/texflow.nvim/commit/ead177afe48f676a900f4c67fff75de988bbc9c4)
+- Extend message length limit to 60 [1109067](https://github.com/Jaehaks/texflow.nvim/commit/11090673ad3fa7e29628192d97b46722d46100b1)
+
 ## 2025-10-24
 
 ### Bug fixed
