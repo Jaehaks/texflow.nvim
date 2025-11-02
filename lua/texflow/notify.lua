@@ -12,6 +12,8 @@ M.progress_items = {}
 ---@type ProgressHandle?
 M.progress = nil
 
+local msg_limit_char = 60
+
 -- create progress message
 ---@param items texflow.notify
 ---@return ProgressHandle?
@@ -21,7 +23,7 @@ M.progress_start = function(items)
 	items.fidget_avail = items.fidget_avail or fidget_avail
 	items.loglevel     = items.loglevel or vim.log.levels.INFO
 
-	if #items.msg > 30 then items.msg = string.sub(items.msg, 1, 30) .. '...' end
+	if #items.msg > msg_limit_char then items.msg = string.sub(items.msg, 1, msg_limit_char) .. '...' end
 	if items.fidget_avail then
 		M.progress = fidget.progress.handle.create({
 			title      = items.title,
@@ -38,8 +40,8 @@ end
 ---@param progress ProgressHandle?
 ---@param items texflow.notify
 M.progress_report = function(progress, items)
-	-- limit to too long string to 30 characters
-	if #items.msg > 30 then items.msg = string.sub(items.msg, 1, 30) .. '...' end
+	-- limit to too long string to msg_limit_char characters
+	if #items.msg > msg_limit_char then items.msg = string.sub(items.msg, 1, msg_limit_char) .. '...' end
 	if progress then
 		progress:report({
 			title = items.title,
@@ -53,7 +55,7 @@ end
 ---@param progress ProgressHandle?
 ---@param items texflow.notify
 M.progress_finish = function(progress, items)
-	if #items.msg > 30 then items.msg = string.sub(items.msg, 1, 30) .. '...' end
+	if #items.msg > msg_limit_char then items.msg = string.sub(items.msg, 1, msg_limit_char) .. '...' end
 	if progress then
 		progress:report({
 			title = items.title,
