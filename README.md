@@ -135,6 +135,7 @@ require('texflow').setup({
     engine = 'latexmk',
     args = {
 	  -- If you use 'outdir' or 'auxdir' in args, don't use @token. use only plain string.
+	  -- don't add '-pvc' in latexmk or '-X watch' in tectonic engine
       '-pdf',
       '-interaction=nonstopmode',
       '-synctex=1',
@@ -151,9 +152,17 @@ require('texflow').setup({
 		'%.synctex%.gz$',
 		'%.aux$', -- for aux file of sub tex files
 	},
-    openAfter = false,	-- open viewer after compile automatically
-                        -- If you set forward-search in viewer configuration, forward search is executed
-    onSave = false,		-- compile *.tex automatically after buffer is saved
+	-- boolean : open viewer automatically after compile
+	-- If true, viewer will opens after every compile, if you set forward search in viewer.args, It does forward-search.
+	-- you can use forward search manually with setting this value false.
+	openAfter = false,
+	-- string : which method uses to automatically compile every file save in project
+	-- nil : don't compile automatically after file save
+	-- 'inherit' : If latex engine supports consecutive compile mode, use the mode.
+	-- 			   'latexmk' and 'tectonic' are recognized until now.
+	-- 'plugin' : If latex engine doesn't supports consecutive compile mode, use it.
+	-- 			  It simulates 'inherit' mode in texflow.nvim itself.
+	onSave = nil,
   },
   viewer = {
     shell = vim.api.nvim_get_option_value('shell', {scope = 'global'}),
@@ -214,7 +223,8 @@ vim.lsp.config('texlab', {
           '-interaction=nonstopmode',   -- continuous mode compilation
           '%f',                         -- current file
         },
-        onSave = false,                 -- build on save (it works when :w but not autocmd save)
+        onSave = false,                 -- build on save (it makes texlab do continuous compile mode
+										-- but it cannot be turned off by user. use 'texflow.nvim' instead of it.
         forwardSearchAfter = false,     -- perform forward search after build
       },
 	  -- forward / inverse search will be done by texflow.nvim
@@ -311,13 +321,14 @@ require('texflow').compile({
   }
 })
 
--- If onSave is true, compile() does toggle behavior.
--- It turns on continuous mode after first compilation, then texflow compiles whenever you save file.
--- If you call this function again, It turns off continuous mode without compilation.
+-- If onSave is set as 'inherit' or 'plugin', compile() does toggle behavior.
+-- It turns on continuous mode after first execution,
+-- 'latex.engine' will compile automaticlally when it set 'inherit', 'texflow.nvim' will compile automatically when it set 'plugin'.
+-- When you call this function again, It turns off continuous mode without compilation.
 require('texflow').compile({
   latex = {
     openAfter = true,
-    onSave = true,
+    onSave = 'inherit',
   }
 })
 ```
@@ -391,6 +402,8 @@ You don't need to include `--file-line-error` argument necessarily in your latex
 > If you are using `TexLive`, you can use `texmf.cnf`. \
 > You need to set `max_print_line` to high value (>5000) in `texmf.cnf` manually.
 
+> [!MISSING]
+> `texflow.nvim` cannot support parsing `tectonic`'s log file yet. It supports `latexmk` only.
 
 #### 💡 Diagnostics on project
 
