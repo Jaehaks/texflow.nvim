@@ -237,13 +237,13 @@ These @token is supported. They will be replaced with real value before job star
 
 | @token         | Description                                                        |
 | -------------- | ------------------------------------------------------------------ |
-| @texname       | file name without extension of current tex file                    |
-| @curtex        | file name with extension of current tex file (error it not)        |
-| @maintex       | file name with extension of main tex file in project               |
-| @line          | line number under cursor                                           |
-| @pdf           | file path of pdf file which is corresponding with current tex file |
-| @InverseSearch | file path of python file to inverse-search                         |
-| @servername    | servername of current neovim instance                              |
+| `@texname`       | file name without extension of current tex file                    |
+| `@curtex`        | file name with extension of current tex file (error it not)        |
+| `@maintex`       | file name with extension of main tex file in project               |
+| `@line`          | line number under cursor                                           |
+| `@pdf`           | file path of pdf file which is corresponding with current tex file |
+| `@InverseSearch` | file path of python file to inverse-search                         |
+| `@servername`    | servername of current neovim instance                              |
 
 
 
