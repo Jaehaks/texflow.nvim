@@ -295,7 +295,7 @@ end
 
 ## `Compile(opts)`
 
-![texflow_compile_onSave](https://github.com/user-attachments/assets/48afb998-f5c2-440b-ba13-625c7db418db)
+https://github.com/user-attachments/assets/dfbac567-4a42-478c-81f5-96b0c5767534
 
 You can overwrite configuration to each command. If `opts` is `nil`, it is applied by your configuration by `setup()`.
 
@@ -365,8 +365,7 @@ The project root can be determined by this sequence.
 
 ### `Compile:Diagnostics`
 
-![texflow_diagnostic](https://github.com/user-attachments/assets/6146979a-b41b-49ee-ac08-20917dbb56d6)
-
+https://github.com/user-attachments/assets/10162630-4d23-4496-8b10-af53cea4a7e5
 
 `Texflow.nvim` supports showing diagnostics in statuscolumn like lsp. \
 These diagnostics are from `*.log` file after `*.tex` file is compiled. `Texflow.nvim` parses the error messages
