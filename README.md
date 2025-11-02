@@ -402,6 +402,8 @@ Diagnostics are automatically displayed when you open the file, even if it was n
 
 ## `cleanup_auxfiles(opts, cb)`
 
+https://github.com/user-attachments/assets/67f7f947-c6cc-4ee6-bf1b-40276384b932
+
 ```lua
 -- clean up auxiliary files resulting from compilation
 ---@param opts texflow.config
