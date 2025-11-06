@@ -211,6 +211,26 @@ local root_dir_texlab = function (bufnr, cb)
   }) or vim.fn.expand('%:p:h')
   cb(root)
 end
+
+-- texlab supports two diagnostics source (texlab / latex)
+-- `texlab` source shows results independent of the compile engine.
+-- `latex` source read log file and show the result of parsing which is duplicated with diagnostic result of texflow.nvim
+-- To prevent annoying diagnostics, filter diagnostic of `latex` source.
+local function filter_diagnostics(diagnostics, unwanted_source)
+  local filtered = {}
+  for _, diag in ipairs(diagnostics) do
+    if diag.source ~= unwanted_source then
+      table.insert(filtered, diag)
+    end
+  end
+  return filtered
+end
+local function publishDiagnostics_texlab(err, result, ctx)
+  local unwanted_source = 'latex'
+  result.diagnostics = filter_diagnostics(result.diagnostics, unwanted_source)
+  return vim.lsp.handlers['textDocument/publishDiagnostics'](err, result, ctx)
+end
+
 vim.lsp.config('texlab', {
   cmd = {'texlab'},
   root_dir = root_dir_texlab,
@@ -218,19 +238,14 @@ vim.lsp.config('texlab', {
   settings = { -- see https://github.com/latex-lsp/texlab/wiki/Configuration
     texlab = {
       build = {
-        executable = 'latexmk',
-        args = {
-          '-interaction=nonstopmode',   -- continuous mode compilation
-          '%f',                         -- current file
-        },
         onSave = false,                 -- build on save (it makes texlab do continuous compile mode
 										-- but it cannot be turned off by user. use 'texflow.nvim' instead of it.
         forwardSearchAfter = false,     -- perform forward search after build
       },
-	  -- forward / inverse search will be done by texflow.nvim
-      latexFormatter = 'latexindent',
-      latexindent = {
-        modifyLineBreaks = false,
+      -- forward / inverse search will be done by texflow.nvim
+      handlers = {
+        -- disable 'latex' source diagnostics
+        ['textDocument/publishDiagnostics'] = publishDiagnostics_texlab,
       }
     },
   },
