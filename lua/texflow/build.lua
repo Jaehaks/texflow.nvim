@@ -205,11 +205,11 @@ local function add_pvc_cmd(cmd, opts)
 			cmd[#cmd+1] = '-pvc -view=none'
 		end
 	elseif opts.latex.engine == 'tectonic' then
-		if string.find(cmd_s, '%s+%-X watch%s+') then
-			vim.notify('remove "-X watch" option from latex.args in config, use "onSave" option of "texflow.nvim"', vim.log.levels.ERROR)
+		if string.find(cmd_s, '%s+watch%s+') then
+			vim.notify('remove "watch" option from latex.args in config, use "onSave" option of "texflow.nvim"', vim.log.levels.ERROR)
 			return nil
 		else
-			cmd[#cmd+1] = '-X watch'
+			cmd = {'tectonic', '-X', 'watch'}
 		end
 	else
 		vim.notify(opts.latex.engine .. ' doesn\'t support "inherit" mode, use "plugin" instead on "onSave" option', vim.log.levels.ERROR)
