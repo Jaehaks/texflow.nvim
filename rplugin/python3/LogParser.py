@@ -60,6 +60,9 @@ def main():
         # it capture until \[ but excludes \n or $
         "warn_toc": r'^(?P<warn_toc>warning.*?)(?:\n|$)(?=\[)', # pdfTex warning (ext4): ~ end with multiple white spaces
         "warn_over": r'^(?P<warn_over>(Overfull|Underfull).*?)(?:\n|$)(?=\[)',   # 'overfull|underfull' to before ~ 59--60 []
+
+        # If it is failed to detect some files, It shows error
+        "warn_nofile": r'^(?P<warn_nofile>No file.*?\.)(?:\n|$)',   # No file <filename>.bbl
     }
 
     combined_patterns = r'|'.join(f"{pattern}" for pattern in patterns.values()) # combine patterns to string with '|',

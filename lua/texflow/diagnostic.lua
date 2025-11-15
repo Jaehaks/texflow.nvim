@@ -19,6 +19,7 @@ local captures = {
 	warn_other = "^%w+ warning l%.(%d+) (.+)$",
 	warn_toc   = "^warning.*",
 	warn_pkg   = "^Package (%w+) Warning:.*",
+	warn_nofile   = "^No file (.+)$",
 }
 
 
@@ -49,6 +50,7 @@ local function add_diagnostic(data)
 		local warn_under = {line:match(captures.warn_under)}
 		local warn_toc   = {line:match(captures.warn_toc)}
 		local warn_pkg   = {line:match(captures.warn_pkg)}
+		local warn_nofile   = {line:match(captures.warn_nofile)}
 
 
 		-- get diagnostics
@@ -101,6 +103,9 @@ local function add_diagnostic(data)
 			lnum = Utils.get_lineinfo_from_pattern(file.mainpath, pattern)
 			msg = line
 			mtype = vim.diagnostic.severity.ERROR
+		elseif warn_nofile[1] then
+			msg = line
+			mtype = vim.diagnostic.severity.WARN
 		end
 
 		if msg then
