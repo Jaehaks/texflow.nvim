@@ -427,6 +427,12 @@ When you have multiple sub-files used in main file and there are some errors or 
 Diagnostics of each files will be displayed according to each files which is loaded in neovim.
 Diagnostics are automatically displayed when you open the file, even if it was not loaded at compile time.
 
+#### 💡 Quickfix list
+
+After tex file is compiled, all diagnostics from log file are added to quickfix list automatically
+with including diagnostics of `texlab` lsp. You can recognize which errors in project at a glance using this.
+
+
 
 ## `cleanup_auxfiles(opts, cb)`
 
