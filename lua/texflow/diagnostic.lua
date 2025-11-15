@@ -143,6 +143,7 @@ local function add_diagnostic(data)
 		return
 	end
 
+	-- add diagnostics for opened buffer
 	for path, diag in pairs(diagnostics) do
 		local bufnr = vim.fn.bufnr(path)
 		if vim.fn.bufloaded(bufnr) == 1 then -- show diagnostic for loaded buffer
@@ -155,6 +156,7 @@ local function set_diagnostic_autocmd()
 	local file = Utils.get_filedata()
 
 	vim.api.nvim_create_augroup('TexFlow.Diagnostics', {clear = true})
+	-- show diagnostics when a file is opened even though it is not loaded before.
 	vim.api.nvim_create_autocmd({'BufReadPost'}, {
 		group = 'TexFlow.Diagnostics',
 		callback = function (args)
@@ -165,6 +167,7 @@ local function set_diagnostic_autocmd()
 			end
 		end,
 	})
+	-- Add diagnostics to quickfix
 	vim.api.nvim_create_autocmd({'DiagnosticChanged'}, {
 		group = 'TexFlow.Diagnostics',
 		callback = function (args)
