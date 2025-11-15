@@ -1,5 +1,15 @@
 # ChnageLog
 
+## 2025-11-15
+
+### Bug fixed
+- Fix command to executes `tectonic` watch mode [0cb3fe9](https://github.com/Jaehaks/texflow.nvim/commit/0cb3fe9e8ba611fc1d3748a0075062b0c9bf4472)
+- Add `end_col` to diagnostic [b50989e](https://github.com/Jaehaks/texflow.nvim/commit/b50989e1c20c15ed1de29e1c315025de09cb81b9)
+- Some diagnostics are missing in quickfix at first compile [19c7f24](https://github.com/Jaehaks/texflow.nvim/commit/19c7f248513c8c49a54da30b1efe5c058f4f85c0)
+
+### Features
+- add `warn_nofile` case [6f7f5e8](https://github.com/Jaehaks/texflow.nvim/commit/6f7f5e8a8d66281e2c3421b744613d7474324a24)
+
 ## 2025-11-02
 
 ### Bug fixed
@@ -12,7 +22,6 @@
 
 ### ReFactoring
 - Separate `cleanup_auxfiles()` independently from `compile()` [675066c](https://github.com/Jaehaks/texflow.nvim/commit/675066c4512a7a8d2e7e28f8e3eced595be82f54)
-
 
 ### Features
 - Add `cleanup_auxfiles()` to clear aux file of project. [517403d](https://github.com/Jaehaks/texflow.nvim/commit/517403df2f6d90cb2d7f637b7fa99014310762f9)
