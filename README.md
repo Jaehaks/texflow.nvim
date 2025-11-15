@@ -432,6 +432,8 @@ Diagnostics are automatically displayed when you open the file, even if it was n
 After tex file is compiled, all diagnostics from log file are added to quickfix list automatically
 with including diagnostics of `texlab` lsp. You can recognize which errors in project at a glance using this.
 
+https://github.com/user-attachments/assets/e31e9a7d-dd47-461a-9c87-e1f877a3949c
+
 
 
 ## `cleanup_auxfiles(opts, cb)`
