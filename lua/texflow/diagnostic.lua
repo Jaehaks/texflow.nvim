@@ -235,8 +235,8 @@ local function get_log_core_py(opts)
 			end
 
 			-- add diagnostics
-			add_diagnostic(ndata)
 			set_diagnostic_autocmd()
+			add_diagnostic(ndata)
 		end
 	})
 end
