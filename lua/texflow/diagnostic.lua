@@ -79,11 +79,11 @@ local function add_diagnostic(data)
 		elseif warn_over[1] then
 			msg = line
 			lnum = unpack(warn_over)
-			mtype = vim.diagnostic.severity.WARN
+			mtype = vim.diagnostic.severity.INFO
 		elseif warn_under[1] then
 			msg = line
 			lnum = unpack(warn_under)
-			mtype = vim.diagnostic.severity.WARN
+			mtype = vim.diagnostic.severity.INFO
 		elseif warn_toc[1] then
 			msg = line
 			mtype = vim.diagnostic.severity.WARN
