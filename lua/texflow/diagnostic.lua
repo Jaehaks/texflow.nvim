@@ -114,6 +114,7 @@ local function add_diagnostic(data)
 			---@class texflow.diagnosticItem
 			---@field lnum number
 			---@field col number
+			---@field end_col number
 			---@field severity number?
 			---@field message string
 			---@field source string
@@ -121,6 +122,7 @@ local function add_diagnostic(data)
 			local item = {
 				lnum = lnum and tonumber(lnum)-1 or 0,
 				col = lnum and 0 or 1,
+				end_col = lnum and 0 or 1,
 				severity = mtype,
 				message = msg,
 				source = ns_name,
