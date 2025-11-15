@@ -23,8 +23,61 @@ local captures = {
 }
 
 
----@type table<string, texflow.diagnosticItem[]>
+---@type table<string, texflow.diagnosticItem[]> key is absolute filepath
 local diagnostics = {} -- show diagnostics in statuscolumn
+
+
+---@param namespace_id integer
+local function update_quickfix(namespace_id)
+	local qflist = vim.fn.getqflist()
+	local qfitems = {}
+	local qfitem = {}
+
+	-- remain qfitem except of namespace_id
+	for _, item in ipairs(qflist) do
+		if item.user_data and item.user_data.namespace ~= namespace_id then
+			qfitems[#qfitems+1] = item
+		end
+	end
+
+	if namespace_id ~= ns_id then
+		-- add user_data to qfitems of other lsp
+		local diags = vim.diagnostic.get(nil, {namespace = namespace_id})
+		local qfitems_other = vim.diagnostic.toqflist(diags)
+		for k, _ in ipairs(qfitems_other) do
+			qfitems_other[k].user_data = {}
+			qfitems_other[k].user_data.namespace = namespace_id
+		end
+		vim.list_extend(qfitems, qfitems_other)
+	else
+		-- get qflist from texflow diagnostics
+		for filepath, diags in pairs(diagnostics) do
+			for _, diag in ipairs(diags) do
+				qfitem = {
+					filename  = filepath,
+					lnum      = diag.lnum+1, -- 1 index
+					col       = diag.col+1, -- 1 index
+					end_col   = diag.end_col+1, -- 1 index
+					text      = diag.message,
+					type      = ({ [vim.diagnostic.severity.ERROR]='E',
+						   		   [vim.diagnostic.severity.WARN] ='W',
+						   		   [vim.diagnostic.severity.INFO] ='I' })[diag.severity] or ' ',
+					valid     = 1,
+					user_data = {
+						source = diag.source,
+						namespace = diag.namespace,
+					}
+				}
+				qfitems[#qfitems+1] = qfitem
+			end
+		end
+	end
+
+	vim.fn.setqflist({}, 'r', {
+		items = qfitems,
+		title = 'texflow.nvim',
+	})
+end
 
 -- add diagnostic
 ---@param data table output data table from python log parser
@@ -144,6 +197,7 @@ local function add_diagnostic(data)
 		end
 	end
 
+	update_quickfix(ns_id) -- add diagnostics to quickfix
 	if vim.tbl_isempty(diagnostics) then
 		return
 	end
@@ -180,17 +234,11 @@ local function set_diagnostic_autocmd()
 			-- add diagnostics of project to quickfix list It current buffer is in latex project
 			if (filepath and filepath ~= '') and string.match(filepath, '^' .. file.compiledir) then
 				local ns_list = vim.diagnostic.get_namespaces()
-				local diag_list = {}
 				for id, ns in pairs(ns_list) do
-					-- add diagnostics of texlab or texflow lsp
 					if string.find(ns.name, 'texlab') or string.find(ns.name, 'texflow') then
-						local diags = vim.diagnostic.get(nil, {namespace = id})
-						vim.list_extend(diag_list, diags)
+						update_quickfix(id)
 					end
 				end
-				-- qflist update
-				local qfitems = vim.diagnostic.toqflist(diag_list)
-				vim.fn.setqflist(qfitems, 'r')
 			end
 		end,
 	})
